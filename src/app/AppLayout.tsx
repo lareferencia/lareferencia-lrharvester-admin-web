@@ -10,6 +10,8 @@ export function AppLayout() {
       <Typography variant="h6" component={Link} to="/networks" color="inherit" sx={{ textDecoration: 'none', flexGrow: 1 }}>
         LA Referencia · Cosechador
       </Typography>
+      <Button color="inherit" component={Link} to="/validators">Validadores</Button>
+      <Button color="inherit" component={Link} to="/transformers">Transformadores</Button>
       <Button color="inherit" component={Link} to="/runtime">Runtime</Button>
       <Typography variant="body2" sx={{ ml: 2, mr: 1 }}>{user?.displayName}</Typography>
       <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>Salir</Button>
