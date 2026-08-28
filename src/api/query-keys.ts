@@ -10,5 +10,12 @@ export const queryKeys = {
   ruleTypes: (kind: 'validator' | 'transformer') => ['rule-types', kind] as const,
   attributeProfiles: ['attribute-profiles'] as const,
   capabilities: ['capabilities'] as const,
+  applicationActions: ['application-actions'] as const,
+  networkActions: (id: number) => ['networks', id, 'actions'] as const,
+  networkSnapshots: (id: number) => ['networks', id, 'snapshots'] as const,
+  diagnosticSummary: (snapshotId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'summary', filters] as const,
+  diagnosticRecords: (snapshotId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'records', filters] as const,
+  diagnosticOccurrences: (snapshotId: number, ruleId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'occurrences', ruleId, filters] as const,
+  snapshotLogs: (snapshotId: number) => ['snapshots', snapshotId, 'logs'] as const,
   runtime: ['runtime'] as const,
 }

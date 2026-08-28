@@ -6,6 +6,21 @@ export type Snapshot = {
   validSize: number | null; transformedSize: number | null; deleted: boolean
 }
 
+export type DiagnosticFilterField = 'IDENTIFIER' | 'VALID' | 'TRANSFORMED' | 'RULE_VALID' | 'RULE_INVALID'
+export type DiagnosticFilter = { field: DiagnosticFilterField; operator?: 'EQ' | 'CONTAINS'; value: string | boolean | number }
+export type DiagnosticQuery = { filters: DiagnosticFilter[]; page?: number; size?: number }
+export type DiagnosticFacet = { field: string; value: string; count: number }
+export type DiagnosticRule = { ruleId: number; name: string; description: string | null; quantifier: string | null; mandatory: boolean | null; validCount: number | null; invalidCount: number | null }
+export type DiagnosticSummary = { size: number; validSize: number; transformedSize: number; rules: DiagnosticRule[]; facets: DiagnosticFacet[] }
+export type DiagnosticRecord = {
+  id: string; identifier: string; snapshotId: number; origin: string | null; setSpec: string | null; metadataPrefix: string | null
+  networkAcronym: string | null; repositoryName: string | null; institutionName: string | null; valid: boolean | null; transformed: boolean | null
+  validRuleIds: string[]; invalidRuleIds: string[]; validOccurrencesByRuleId: Record<string, string[]>; invalidOccurrencesByRuleId: Record<string, string[]>
+}
+export type RuleOccurrence = { value: string; count: number }
+export type RuleOccurrences = { ruleId: number; valid: RuleOccurrence[]; invalid: RuleOccurrence[] }
+export type SnapshotLogEntry = { timestamp: string; message: string }
+
 export type RuntimeState = { runningCount: number; queuedCount: number; scheduledCount: number; running: string[]; queued: string[]; scheduled: string[] }
 
 export type NetworkSummary = {
@@ -59,3 +74,14 @@ export type CommandType = 'RUN_ACTION' | 'RUN_ENABLED_ACTIONS' | 'CANCEL_ALL' | 
 export type CommandRequest = { type: CommandType; actionName?: string; incremental?: boolean }
 export type CommandReceipt = { requestId: string; networkId: number; command: CommandType; result: 'ACCEPTED' | 'REJECTED'; acceptedAt: string; runtimeUrl: string; message: string | null }
 export type ApiProblem = { status?: number; title?: string; detail?: string; code?: string; traceId?: string; violations?: Array<{ field: string; message: string }> }
+
+export type ApplicationActionState = 'ENABLED' | 'DISABLED' | 'UNAVAILABLE' | 'INVALID_CONFIGURATION'
+export type ApplicationAction = {
+  id: number; engineType: 'legacy' | 'flowable'; actionKey: string; state: ApplicationActionState
+  enabled: boolean; available: boolean; definition: { name?: string; description?: string; incremental?: boolean; schedulable?: boolean }
+  configuration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>
+  problems: string[]; lastSeenAt: string | null; updatedAt: string; updatedBy: string | null
+}
+export type ApplicationActionUsage = { used: boolean; networkCount: number; scheduleCount: number; networks: Usage['networks'] }
+export type ApplicationActionRefresh = { engineType: string; bootstrap: boolean; created: number; updated: number; unavailable: number; conflicts: string[] }
+export type NetworkActionConfiguration = { actionKey: string; globalState: ApplicationActionState; enabled: boolean; scheduleEnabled: boolean; configuration: Record<string, unknown>; effectiveConfiguration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>; problems: string[]; updatedAt: string; updatedBy: string | null }
