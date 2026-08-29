@@ -6,7 +6,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import TroubleshootOutlinedIcon from '@mui/icons-material/TroubleshootOutlined'
+import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Menu, MenuItem, Pagination, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
@@ -18,8 +18,11 @@ import type { ApiError } from '../../api/problem-detail'
 import type { CapabilityAction, CommandRequest, CommandReceipt, NetworkSummary } from '../../api/types'
 import { queryKeys } from '../../api/query-keys'
 import { useAuth } from '../../auth/AuthProvider'
+import { useTranslation } from 'react-i18next'
+import AddIcon from '@mui/icons-material/Add'
 
 export function NetworkListPage({ client }: { client: ApiClient }) {
+  const { t } = useTranslation()
   const [page, setPage] = useState(0)
   const [q, setQ] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
@@ -32,12 +35,12 @@ export function NetworkListPage({ client }: { client: ApiClient }) {
   const total = query.data?.totalElements ?? 0
   const activeNetworks = query.data?.items.filter(network => network.runtime.runningCount > 0 || network.runtime.queuedCount > 0).length ?? 0
   return <Stack spacing={3}>
-    <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, color: 'common.white', overflow: 'hidden', position: 'relative', background: 'linear-gradient(125deg, #173c5c 0%, #245b78 62%, #207a64 140%)', '&:before': { content: '""', position: 'absolute', width: 330, height: 330, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.07)', right: -90, top: -150 } }}><Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between" alignItems={{ md: 'flex-end' }}><Box sx={{ position: 'relative' }}><Typography variant="overline" sx={{ opacity: .7, fontWeight: 800, letterSpacing: '.12em' }}>Centro de operaciones</Typography><Typography variant="h4" sx={{ color: 'inherit', mt: .25 }}>Fuentes cosechadas</Typography><Typography sx={{ opacity: .82, mt: .8 }}>Supervisa resultados, programación y actividad en tiempo real.</Typography></Box><Stack direction="row" spacing={1.2} sx={{ position: 'relative' }}><Metric label="Fuentes" value={total} /><Metric label="Activas" value={activeNetworks} accent /></Stack></Stack></Paper>
+    <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, color: 'common.white', overflow: 'hidden', position: 'relative', background: 'linear-gradient(125deg, #173c5c 0%, #245b78 62%, #207a64 140%)', '&:before': { content: '""', position: 'absolute', width: 330, height: 330, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.07)', right: -90, top: -150 } }}><Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between" alignItems={{ md: 'flex-end' }}><Box sx={{ position: 'relative' }}><Typography variant="overline" sx={{ opacity: .7, fontWeight: 800, letterSpacing: '.12em' }}>{t('networks.center')}</Typography><Typography variant="h4" sx={{ color: 'inherit', mt: .25 }}>{t('networks.title')}</Typography><Typography sx={{ opacity: .82, mt: .8 }}>{t('networks.subtitle')}</Typography></Box><Stack direction="row" spacing={1.2} sx={{ position: 'relative' }}><Metric label={t('networks.sources')} value={total} /><Metric label={t('networks.active')} value={activeNetworks} accent />{canOperate && <Button component={Link} to="/networks/new" variant="contained" color="secondary" startIcon={<AddIcon />}>Nueva fuente</Button>}</Stack></Stack></Paper>
     {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
-    <Paper variant="outlined" sx={{ p: 1.25 }}><TextField placeholder="Buscar por acrónimo, repositorio o institución" value={q} onChange={event => { setPage(0); setQ(event.target.value) }} fullWidth InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }} /></Paper>
-    {query.isError && <Alert severity="error">No se pudieron cargar las fuentes.</Alert>}
-    {query.isLoading ? <CircularProgress /> : <Paper variant="outlined" sx={{ overflow: 'hidden' }}><Box sx={{ px: 2.5, py: 1.8, borderBottom: '1px solid', borderColor: 'divider' }}><Typography fontWeight={750}>Inventario de fuentes</Typography><Typography variant="body2" color="text.secondary">{total} resultado{total === 1 ? '' : 's'} · actualización automática cada 10 segundos</Typography></Box><Box sx={{ overflowX: 'auto' }}><Table><TableHead><TableRow>
-      <TableCell>ID</TableCell><TableCell>Acrónimo</TableCell><TableCell>Repositorio</TableCell><TableCell>Institución</TableCell><TableCell>Último snapshot</TableCell><TableCell>Estado</TableCell><TableCell align="right">Acciones</TableCell>
+    <Paper variant="outlined" sx={{ p: 1.25 }}><TextField placeholder={t('networks.search')} value={q} onChange={event => { setPage(0); setQ(event.target.value) }} fullWidth InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }} /></Paper>
+    {query.isError && <Alert severity="error">{t('networks.loadError')}</Alert>}
+    {query.isLoading ? <CircularProgress /> : <Paper variant="outlined" sx={{ overflow: 'hidden' }}><Box sx={{ px: 2.5, py: 1.8, borderBottom: '1px solid', borderColor: 'divider' }}><Typography fontWeight={750}>{t('networks.inventory')}</Typography><Typography variant="body2" color="text.secondary">{t('networks.results', { count: total })} · {t('networks.refresh')}</Typography></Box><Box sx={{ overflowX: 'auto' }}><Table><TableHead><TableRow>
+      <TableCell>ID</TableCell><TableCell>{t('networks.acronym')}</TableCell><TableCell>{t('networks.repository')}</TableCell><TableCell>{t('networks.institution')}</TableCell><TableCell>{t('networks.latestSnapshot')}</TableCell><TableCell>{t('common.state')}</TableCell><TableCell align="right">{t('common.actions')}</TableCell><TableCell align="center" sx={{ width: 46 }} />
     </TableRow></TableHead><TableBody>{query.data?.items.map(network => <NetworkRow key={network.id} network={network} client={client} actions={capabilities.data?.actions || []} canOperate={canOperate} onAccepted={receipt => setNotice(`${network.acronym}: ${receipt.command} aceptado (${receipt.requestId}). ${receipt.message || ''}`)} />)}</TableBody></Table></Box></Paper>}
     {query.data && <Pagination page={page + 1} count={Math.max(1, query.data.totalPages)} onChange={(_, value) => setPage(value - 1)} />}
   </Stack>
@@ -65,7 +68,7 @@ function NetworkRow({ network, client, actions, canOperate, onAccepted }: { netw
   const run = (request: CommandRequest) => { setAnchor(null); command.mutate(request) }
   const requestConfirmation = (request: CommandRequest) => { setAnchor(null); setConfirmation(request) }
   const active = network.runtime.runningCount > 0 || network.runtime.queuedCount > 0
-  const orderedActions = [...actions].sort((left, right) => (left.displayOrder ?? 9999) - (right.displayOrder ?? 9999))
+  const orderedActions = [...actions].sort((left, right) => (left.order ?? 9999) - (right.order ?? 9999))
 
   return <TableRow hover sx={{ '& > *': { py: 1.45 }, ...(active ? { '& > *': { bgcolor: 'rgba(32, 122, 100, .045)' } } : {}) }}>
     <TableCell><Typography variant="caption" sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: 'text.secondary', fontWeight: 700 }}>#{network.id}</Typography></TableCell><TableCell><Typography fontWeight={800} color="primary.dark">{network.acronym}</Typography></TableCell>
@@ -79,6 +82,8 @@ function NetworkRow({ network, client, actions, canOperate, onAccepted }: { netw
       <Dialog open={confirmCancel} onClose={() => setConfirmCancel(false)}><DialogTitle>Cancelar operaciones de {network.acronym}</DialogTitle><DialogContent><Typography>Se cancelarán todas las acciones activas o en cola para esta fuente.</Typography></DialogContent><DialogActions><IconButton aria-label="Cerrar" onClick={() => setConfirmCancel(false)}><CancelOutlinedIcon /></IconButton><Tooltip title="Cancelar operaciones"><span><IconButton color="error" disabled={command.isPending} onClick={() => { setConfirmCancel(false); run({ type: 'CANCEL_ALL' }) }}><CancelOutlinedIcon /></IconButton></span></Tooltip></DialogActions></Dialog>
       <CommandConfirmation open={confirmation} acronym={network.acronym} pending={command.isPending} onClose={() => setConfirmation(null)} onConfirm={() => { if (confirmation) { setConfirmation(null); run(confirmation) } }} />
       <HarvestHistoryDialog client={client} network={network} open={historyOpen} onClose={() => setHistoryOpen(false)} />
+    </TableCell><TableCell align="center" sx={{ width: 46, px: 0.15 }}>
+      {canOperate && <Tooltip title="Editar configuración"><IconButton aria-label="Editar configuración" component={Link} to={`/networks/${network.id}/edit`} sx={{ p: 0.5, minWidth: 32, minHeight: 32 }}><EditOutlinedIcon fontSize="small" /></IconButton></Tooltip>}
     </TableCell>
   </TableRow>
 }
@@ -115,15 +120,14 @@ function ProcessList({ title, values, empty }: { title: string; values: string[]
 
 function NetworkToolbar({ network, actions, canOperate, pending, active, anchor, onOpenActions, onCloseActions, onRun, onCancel, onHistory }: { network: NetworkSummary; actions: CapabilityAction[]; canOperate: boolean; pending: boolean; active: boolean; anchor: HTMLElement | null; onOpenActions: (event: MouseEvent<HTMLElement>) => void; onCloseActions: () => void; onRun: (request: CommandRequest) => void; onCancel: () => void; onHistory: () => void }) {
   const disabled = pending || !canOperate
-  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 26px)', gridAutoRows: 26, justifyContent: 'end', '& .MuiIconButton-root': { p: 0.35 }, '& svg': { fontSize: 19 } }}>
+  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 23px)', gridAutoRows: 24, justifyContent: 'end', columnGap: 0.15, '& .MuiIconButton-root': { p: 0.15, minWidth: 23, minHeight: 23 }, '& svg': { fontSize: 17 } }}>
     {canOperate && <><Tooltip title="Ejecutar acciones habilitadas"><span><IconButton aria-label="Ejecutar acciones habilitadas" color="primary" disabled={disabled} onClick={() => onRun({ type: 'RUN_ENABLED_ACTIONS' })}><PlayCircleOutlineIcon /></IconButton></span></Tooltip>
       <Tooltip title="Ejecutar acción"><span><IconButton aria-label="Ejecutar acción" color="primary" disabled={disabled || actions.length === 0} onClick={onOpenActions}><BoltIcon /></IconButton></span></Tooltip>
       <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={onCloseActions}>{actions.map(action => <ActionMenuItems key={action.name} action={action} onRun={onRun} />)}</Menu>
       <Tooltip title="Reprogramar"><span><IconButton aria-label="Reprogramar" disabled={disabled} onClick={() => onRun({ type: 'RESCHEDULE' })}><EventRepeatIcon /></IconButton></span></Tooltip>
       <Tooltip title={active ? 'Cancelar acciones activas o en cola' : 'No hay acciones activas para cancelar'}><span><IconButton aria-label="Cancelar acciones" color="error" disabled={disabled || !active} onClick={onCancel}><CancelOutlinedIcon /></IconButton></span></Tooltip></>}
     <Tooltip title="Historial y bitácoras de cosecha"><IconButton aria-label="Historial y bitácoras" onClick={onHistory}><HistoryOutlinedIcon /></IconButton></Tooltip>
-    <Tooltip title={network.lastValidSnapshotId ? 'Abrir diagnóstico del último snapshot válido' : 'No hay snapshot válido para diagnosticar'}><span><IconButton aria-label="Abrir diagnóstico" component={network.lastValidSnapshotId ? Link : 'button'} to={network.lastValidSnapshotId ? `/networks/${network.id}/diagnostics?snapshot=${network.lastValidSnapshotId}` : undefined} disabled={!network.lastValidSnapshotId}><TroubleshootOutlinedIcon /></IconButton></span></Tooltip>
-    {canOperate && <Tooltip title="Editar configuración"><IconButton aria-label="Editar configuración" component={Link} to={`/networks/${network.id}/edit`}><EditOutlinedIcon /></IconButton></Tooltip>}
+    <Tooltip title={network.lastValidSnapshotId ? 'Abrir diagnóstico del último snapshot válido' : 'No hay snapshot válido para diagnosticar'}><span><IconButton aria-label="Abrir diagnóstico" component={network.lastValidSnapshotId ? Link : 'button'} to={network.lastValidSnapshotId ? `/networks/${network.id}/diagnostics?snapshot=${network.lastValidSnapshotId}` : undefined} disabled={!network.lastValidSnapshotId}><MedicalServicesOutlinedIcon /></IconButton></span></Tooltip>
   </Box>
 }
 

@@ -4,6 +4,7 @@ import type { ApiClient } from '../api/client'
 import { RequireRole } from '../auth/RequireRole'
 import { NetworkEditPage } from '../features/networks/NetworkEditPage'
 import { NetworkListPage } from '../features/networks/NetworkListPage'
+import { NetworkCreatePage } from '../features/networks/NetworkCreatePage'
 import { RuntimePage } from '../features/runtime/RuntimePage'
 import { ConfigurationListPage } from '../features/configurations/ConfigurationListPage'
 import { ConfigurationEditPage } from '../features/configurations/ConfigurationEditPage'
@@ -20,6 +21,7 @@ export function createRouter(client: ApiClient) {
     { path: '/', element: <RequireRole><AppLayout /></RequireRole>, children: [
       { index: true, element: <NetworkListPage client={client} /> },
       { path: 'networks', element: <NetworkListPage client={client} /> },
+      { path: 'networks/new', element: <RequireRole role="ADMIN"><NetworkCreatePage client={client} /></RequireRole> },
       { path: 'networks/:id/edit', element: <RequireRole role="ADMIN"><NetworkEditPage client={client} /></RequireRole> },
       { path: 'networks/:id/diagnostics', element: <DiagnosticsRoute client={client} /> },
       { path: 'validators', element: <ConfigurationListPage client={client} kind="validator" /> },

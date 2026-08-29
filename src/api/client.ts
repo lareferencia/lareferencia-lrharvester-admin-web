@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -31,6 +31,7 @@ export class ApiClient {
   me() { return this.request<CurrentUser>('/me') }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }
+  createNetwork(request: NetworkRequest) { return this.request<Network>('/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   networkSnapshots(id: number) { return this.request<PageResponse<Snapshot>>(`/networks/${id}/snapshots?page=0&size=100`) }
   updateNetwork(id: number, request: NetworkRequest) {
     return this.request<Network>(`/networks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
@@ -44,8 +45,19 @@ export class ApiClient {
   transformerUsage(id: number) { return this.request<Usage>(`/transformers/${id}/usage`) }
   createValidator(request: Omit<ValidatorConfiguration, 'id'>) { return this.request<ValidatorConfiguration>('/validators', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   updateValidator(id: number, request: Omit<ValidatorConfiguration, 'id'>) { return this.request<ValidatorConfiguration>(`/validators/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  updateValidatorMetadata(id: number, request: Pick<ValidatorConfiguration, 'name' | 'description'>) { return this.request<ValidatorConfiguration>(`/validators/${id}/metadata`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   createTransformer(request: Omit<TransformerConfiguration, 'id'>) { return this.request<TransformerConfiguration>('/transformers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   updateTransformer(id: number, request: Omit<TransformerConfiguration, 'id'>) { return this.request<TransformerConfiguration>(`/transformers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  updateTransformerMetadata(id: number, request: Pick<TransformerConfiguration, 'name' | 'description'>) { return this.request<TransformerConfiguration>(`/transformers/${id}/metadata`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  saveConfigurationRule(kind: 'validator' | 'transformer', configurationId: number, rule: Rule) {
+    const payload = { ...rule, className: undefined }
+    const base = `/${kind}s/${configurationId}/rules`
+    return rule.id
+      ? this.request<Rule>(`${base}/${rule.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      : this.request<Rule>(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+  }
+  deleteConfigurationRule(kind: 'validator' | 'transformer', configurationId: number, ruleId: number) { return this.request<void>(`/${kind}s/${configurationId}/rules/${ruleId}`, { method: 'DELETE' }) }
+  reorderConfigurationRules(kind: 'validator' | 'transformer', configurationId: number, ruleIds: number[]) { return this.request<Rule[]>(`/${kind}s/${configurationId}/rules/order`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruleIds }) }) }
   cloneValidator(id: number) { return this.request<ValidatorConfiguration>(`/validators/${id}/clone`, { method: 'POST' }) }
   cloneTransformer(id: number) { return this.request<TransformerConfiguration>(`/transformers/${id}/clone`, { method: 'POST' }) }
   deleteValidator(id: number) { return this.request<void>(`/validators/${id}`, { method: 'DELETE' }) }
@@ -57,7 +69,12 @@ export class ApiClient {
   updateApplicationAction(actionKey: string, enabled: boolean, configuration: Record<string, unknown>) {
     return this.request<ApplicationAction>(`/application-actions/${encodeURIComponent(actionKey)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled, configuration }) })
   }
+  moveApplicationAction(actionKey: string, direction: 'UP' | 'DOWN') {
+    return this.request<ApplicationAction>(`/application-actions/${encodeURIComponent(actionKey)}/move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction }) })
+  }
   refreshApplicationActions() { return this.request<ApplicationActionRefresh>('/application-actions/refresh', { method: 'POST' }) }
+  workerConfigurations() { return this.request<WorkerConfiguration[]>('/worker-configurations') }
+  updateWorkerConfiguration(workerKey: string, configuration: Record<string, unknown>) { return this.request<WorkerConfiguration>(`/worker-configurations/${encodeURIComponent(workerKey)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configuration }) }) }
   networkActions(id: number) { return this.request<NetworkActionConfiguration[]>(`/networks/${id}/actions`) }
   updateNetworkAction(id: number, actionKey: string, request: Pick<NetworkActionConfiguration, 'enabled' | 'scheduleEnabled' | 'configuration'>) {
     return this.request<NetworkActionConfiguration>(`/networks/${id}/actions/${encodeURIComponent(actionKey)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })

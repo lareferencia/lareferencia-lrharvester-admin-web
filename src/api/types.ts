@@ -57,7 +57,7 @@ export type AttributeProfile = {
   schema: Record<string, unknown>; uiSchema: Record<string, unknown>
 }
 
-export type CapabilityAction = { name: string; description: string; incremental: boolean; runOnSchedule: boolean | null; alwaysRunOnSchedule: boolean | null; displayOrder: number | null; workers: string[]; properties: string[] }
+export type CapabilityAction = { name: string; description: string; incremental: boolean; runOnSchedule: boolean | null; alwaysRunOnSchedule: boolean | null; order: number | null; workers: string[]; properties: string[] }
 export type Capabilities = {
   engineType: string; actions: CapabilityAction[]; properties: Array<{ name: string; description: string }>
   metadataFormats: string[]; metadataStoreSchemas: string[]; commands: string[]
@@ -78,10 +78,11 @@ export type ApiProblem = { status?: number; title?: string; detail?: string; cod
 export type ApplicationActionState = 'ENABLED' | 'DISABLED' | 'UNAVAILABLE' | 'INVALID_CONFIGURATION'
 export type ApplicationAction = {
   id: number; engineType: 'legacy' | 'flowable'; actionKey: string; state: ApplicationActionState
-  enabled: boolean; available: boolean; definition: { name?: string; description?: string; incremental?: boolean; schedulable?: boolean }
+  order?: number | null; enabled: boolean; available: boolean; definition: { name?: string; description?: string; incremental?: boolean; schedulable?: boolean; workers?: string[] }
   configuration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>
   problems: string[]; lastSeenAt: string | null; updatedAt: string; updatedBy: string | null
 }
 export type ApplicationActionUsage = { used: boolean; networkCount: number; scheduleCount: number; networks: Usage['networks'] }
 export type ApplicationActionRefresh = { engineType: string; bootstrap: boolean; created: number; updated: number; unavailable: number; conflicts: string[] }
-export type NetworkActionConfiguration = { actionKey: string; globalState: ApplicationActionState; enabled: boolean; scheduleEnabled: boolean; configuration: Record<string, unknown>; effectiveConfiguration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>; problems: string[]; updatedAt: string; updatedBy: string | null }
+export type WorkerConfiguration = { id: number; engineType: 'legacy' | 'flowable'; workerKey: string; available: boolean; definition: { key?: string; beanName?: string }; configuration: Record<string, unknown>; schema: Record<string, unknown>; lastSeenAt: string | null; updatedAt: string; updatedBy: string | null }
+export type NetworkActionConfiguration = { actionKey: string; order?: number | null; globalState: ApplicationActionState; enabled: boolean; scheduleEnabled: boolean; configuration: Record<string, unknown>; effectiveConfiguration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>; problems: string[]; updatedAt: string; updatedBy: string | null }

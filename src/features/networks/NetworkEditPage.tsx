@@ -1,17 +1,18 @@
 import SaveIcon from '@mui/icons-material/Save'
-import { Alert, Autocomplete, Box, Button, Checkbox, CircularProgress, Divider, FormControlLabel, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import Form from '@rjsf/mui'
 import validator from '@rjsf/validator-ajv8'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import type { ApiClient } from '../../api/client'
 import type { ApiError } from '../../api/problem-detail'
-import type { AttributeProfile, Capabilities, NetworkActionConfiguration, NetworkRequest } from '../../api/types'
+import type { ApplicationAction, AttributeProfile, Capabilities, NetworkActionConfiguration, NetworkRequest } from '../../api/types'
 import { queryKeys } from '../../api/query-keys'
+import { useTranslation } from 'react-i18next'
 
 const networkFormSchema = z.object({
   acronym: z.string().min(2, 'Debe tener al menos 2 caracteres.').max(10, 'Máximo 10 caracteres.').regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, 'Solo letras, números, punto, guion y guion bajo.'),
@@ -37,16 +38,20 @@ type TabName = 'general' | 'processing' | 'profile' | 'actions'
 
 export function NetworkEditPage({ client }: { client: ApiClient }) {
   const id = Number(useParams().id)
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const cache = useQueryClient()
   const [tab, setTab] = useState<TabName>('general')
   const [attributes, setAttributes] = useState<Record<string, unknown>>({})
+  const defaultProfileAppliedFor = useRef<number | null>(null)
   const [properties, setProperties] = useState<Record<string, boolean>>({})
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const network = useQuery({ queryKey: queryKeys.network(id), queryFn: () => client.network(id), enabled: Number.isSafeInteger(id) })
   const validators = useQuery({ queryKey: queryKeys.validators, queryFn: () => client.validators() })
   const transformers = useQuery({ queryKey: queryKeys.transformers, queryFn: () => client.transformers() })
   const profiles = useQuery({ queryKey: queryKeys.attributeProfiles, queryFn: () => client.attributeProfiles() })
   const capabilities = useQuery({ queryKey: queryKeys.capabilities, queryFn: () => client.capabilities() })
+  const applicationActions = useQuery({ queryKey: queryKeys.applicationActions, queryFn: () => client.applicationActions() })
   const runtime = useQuery({ queryKey: queryKeys.networkRuntime(id), queryFn: () => client.networkRuntime(id), enabled: Number.isSafeInteger(id) })
   const networkActions = useQuery({ queryKey: queryKeys.networkActions(id), queryFn: () => client.networkActions(id), enabled: Number.isSafeInteger(id) })
   const form = useForm<NetworkForm>({ resolver: zodResolver(networkFormSchema), defaultValues: initialValues })
@@ -65,17 +70,26 @@ export function NetworkEditPage({ client }: { client: ApiClient }) {
     setProperties(network.data.properties || {})
   }, [network.data, form])
 
+  useEffect(() => {
+    if (!network.data || !profiles.data || defaultProfileAppliedFor.current === id) return
+    defaultProfileAppliedFor.current = id
+    if (network.data.attributes?.['@class']) return
+    const defaultProfile = profiles.data.find(item => item.typeId === 'lareferencia-repository') || profiles.data[0]
+    if (defaultProfile) setAttributes(previous => previous['@class'] ? previous : { ...previous, '@class': defaultProfile.className })
+  }, [id, network.data, profiles.data])
+
   const profile = useMemo(() => profiles.data?.find(item => item.className === attributes['@class']), [profiles.data, attributes])
+  const hasUnknownProfile = Boolean(attributes['@class']) && !profile
   const update = useMutation({
     mutationFn: (value: NetworkRequest) => client.updateNetwork(id, value),
     onSuccess: async (saved) => {
+      setSaveSuccess(true)
       await Promise.all([cache.invalidateQueries({ queryKey: queryKeys.network(id) }), cache.invalidateQueries({ queryKey: queryKeys.networkSummaries('') })])
-      navigate(`/networks/${saved.id}`)
     },
   })
 
   if (network.isLoading || validators.isLoading || transformers.isLoading || profiles.isLoading || capabilities.isLoading) return <CircularProgress />
-  if (network.isError || !network.data || validators.isError || transformers.isError || profiles.isError || capabilities.isError) return <Alert severity="error">No se pudo cargar la configuración necesaria para editar esta fuente.</Alert>
+  if (network.isError || !network.data || validators.isError || transformers.isError || profiles.isError || capabilities.isError) return <Alert severity="error">{t('networks.loadError')}</Alert>
   const active = Boolean(runtime.data?.length)
   const onSubmit = (value: NetworkForm) => update.mutate({
     acronym: value.acronym, name: value.name.trim(), institutionName: value.institutionName.trim(), institutionAcronym: blankToNull(value.institutionAcronym),
@@ -85,28 +99,34 @@ export function NetworkEditPage({ client }: { client: ApiClient }) {
   })
 
   return <Stack spacing={3} component="form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-    <Box><Typography component={Link} to={`/networks/${id}`} color="primary">← {network.data.acronym}</Typography><Typography variant="h4">Editar fuente</Typography><Typography color="text.secondary">Los cambios se guardan de forma atómica, incluidas las asociaciones de procesamiento.</Typography></Box>
+    <Box><Typography component={Link} to="/networks" color="primary">← {network.data.acronym}</Typography><Typography variant="h4">{t('networks.edit')}</Typography><Typography color="text.secondary">{t('networks.editDescription')}</Typography></Box>
     {active && <Alert severity="warning">Hay procesos activos para esta fuente. La configuración no puede modificarse hasta que finalicen o se cancelen.</Alert>}
+    {saveSuccess && <Alert severity="success" onClose={() => setSaveSuccess(false)}>Los cambios de la fuente se guardaron correctamente.</Alert>}
     {update.isError && <ApiProblemAlert error={update.error as ApiError} />}
-    <Paper variant="outlined"><Tabs value={tab} onChange={(_, next: TabName) => setTab(next)} variant="scrollable" scrollButtons="auto"><Tab value="general" label="Principal" /><Tab value="processing" label="Procesamiento" /><Tab value="profile" label="Datos específicos" /><Tab value="actions" label="Acciones y programación" /></Tabs>
+    <Paper variant="outlined"><Tabs value={tab} onChange={(_, next: TabName) => setTab(next)} variant="scrollable" scrollButtons="auto"><Tab value="general" label={t('networks.main')} /><Tab value="processing" label={t('networks.processing')} /><Tab value="profile" label={t('networks.profile')} /><Tab value="actions" label={t('networks.actionSchedule')} /></Tabs>
       <Box sx={{ p: 3 }}>
         {tab === 'general' && <GeneralFields form={form} capabilities={capabilities.data!} />}
         {tab === 'processing' && <ProcessingFields form={form} validators={validators.data!.items} transformers={transformers.data!.items} />}
-        {tab === 'profile' && <ProfileFields profile={profile} attributes={attributes} setAttributes={setAttributes} />}
-        {tab === 'actions' && <NetworkActionsEditor client={client} networkId={id} actions={networkActions.data || []} loading={networkActions.isLoading} disabled={active} />}
+        {tab === 'profile' && <ProfileFields profile={profile} profiles={profiles.data!} attributes={attributes} setAttributes={setAttributes} />}
+        {tab === 'actions' && <NetworkActionsEditor client={client} networkId={id} actions={networkActions.data || []} catalog={applicationActions.data || []} loading={networkActions.isLoading} disabled={active} />}
       </Box>
     </Paper>
-    <Stack direction="row" spacing={2}><Button component={Link} to={`/networks/${id}`} disabled={update.isPending}>Cancelar</Button><Button type="submit" variant="contained" startIcon={<SaveIcon />} disabled={update.isPending || active || !profile}>Guardar cambios</Button></Stack>
+    <Stack direction="row" spacing={2}><Button component={Link} to="/networks" disabled={update.isPending}>{t('common.cancel')}</Button><Button type="submit" variant="contained" startIcon={<SaveIcon />} disabled={update.isPending || active || hasUnknownProfile}>{t('networks.saveChanges')}</Button></Stack>
   </Stack>
 }
 
-function NetworkActionsEditor({ client, networkId, actions, loading, disabled }: { client: ApiClient; networkId: number; actions: NetworkActionConfiguration[]; loading: boolean; disabled: boolean }) {
+function NetworkActionsEditor({ client, networkId, actions, catalog, loading, disabled }: { client: ApiClient; networkId: number; actions: NetworkActionConfiguration[]; catalog: ApplicationAction[]; loading: boolean; disabled: boolean }) {
+  const { t } = useTranslation()
   const cache = useQueryClient()
-  const updateAction = useMutation({ mutationFn: (action: NetworkActionConfiguration) => client.updateNetworkAction(networkId, action.actionKey, { enabled: action.enabled, scheduleEnabled: action.scheduleEnabled, configuration: action.configuration }), onSuccess: () => cache.invalidateQueries({ queryKey: queryKeys.networkActions(networkId) }) })
+  const [actionSaved, setActionSaved] = useState(false)
+  const updateAction = useMutation({ mutationFn: (action: NetworkActionConfiguration) => client.updateNetworkAction(networkId, action.actionKey, { enabled: action.enabled, scheduleEnabled: action.scheduleEnabled, configuration: action.configuration }), onSuccess: () => { setActionSaved(true); return cache.invalidateQueries({ queryKey: queryKeys.networkActions(networkId) }) } })
+  const catalogOrder = new Map(catalog.map(action => [action.actionKey, action.order ?? Number.MAX_SAFE_INTEGER]))
+  const orderedActions = [...actions].sort((left, right) => (catalogOrder.get(left.actionKey) ?? left.order ?? Number.MAX_SAFE_INTEGER) - (catalogOrder.get(right.actionKey) ?? right.order ?? Number.MAX_SAFE_INTEGER) || left.actionKey.localeCompare(right.actionKey))
   if (loading) return <CircularProgress />
-  return <Stack spacing={2}><Typography variant="h6">Acciones de esta fuente</Typography><Typography color="text.secondary">Aquí se decide qué puede ejecutarse manualmente, qué participa de la programación y los modificadores propios de cada acción. Las propiedades antiguas permanecen sin cambios como respaldo de migración.</Typography>
+  return <Stack spacing={2}><Typography variant="h6">{t('networks.actionsOfSource')}</Typography><Typography color="text.secondary">{t('networks.processingRelations')}</Typography>
+    {actionSaved && <Alert severity="success" onClose={() => setActionSaved(false)}>La configuración de la acción se guardó correctamente.</Alert>}
     {updateAction.isError && <ApiProblemAlert error={updateAction.error as ApiError} />}
-    {actions.map(action => <Paper key={action.actionKey} variant="outlined" sx={{ p: 2 }}><Stack spacing={1}><Stack direction="row" justifyContent="space-between" alignItems="center"><Typography fontWeight={600}>{action.actionKey}</Typography><Typography variant="body2" color="text.secondary">Global: {action.globalState}</Typography></Stack><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><FormControlLabel control={<Checkbox checked={action.enabled} disabled={disabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, enabled: event.target.checked })} />} label="Permitir ejecución manual" /><FormControlLabel control={<Checkbox checked={action.scheduleEnabled} disabled={disabled || !action.enabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, scheduleEnabled: event.target.checked })} />} label="Ejecutar al dispararse la programación de la fuente" /></Stack>{Object.keys(action.schema.properties || {}).length > 0 && <ActionConfigurationForm action={action} disabled={disabled} saving={updateAction.isPending} onSave={configuration => updateAction.mutate({ ...action, configuration })} />}</Stack></Paper>)}
+    {orderedActions.map(action => { const definition = catalog.find(item => item.actionKey === action.actionKey)?.definition; return <Paper key={action.actionKey} variant="outlined" sx={{ p: 2 }}><Stack spacing={1}><Stack direction="row" justifyContent="space-between" alignItems="center"><Box><Typography fontWeight={600}>{definition?.description || definition?.name || action.actionKey}</Typography><Typography variant="caption" color="text.secondary"><code>{action.actionKey}</code></Typography></Box><Typography variant="body2" color="text.secondary">{action.globalState}</Typography></Stack><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><FormControlLabel control={<Checkbox checked={action.enabled} disabled={disabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, enabled: event.target.checked })} />} label={t('networks.manual')} /><FormControlLabel control={<Checkbox checked={action.scheduleEnabled} disabled={disabled || !action.enabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, scheduleEnabled: event.target.checked })} />} label={t('networks.scheduled')} /></Stack>{Object.keys(action.schema.properties || {}).length > 0 && <ActionConfigurationForm action={action} disabled={disabled} saving={updateAction.isPending} onSave={configuration => updateAction.mutate({ ...action, configuration })} />}</Stack></Paper> })}
   </Stack>
 }
 
@@ -117,29 +137,42 @@ function ActionConfigurationForm({ action, disabled, saving, onSave }: { action:
 
 function GeneralFields({ form, capabilities }: { form: UseFormReturn<NetworkForm>; capabilities: Capabilities }) {
   const { register, control, formState: { errors } } = form
-  return <Stack spacing={2}><Typography variant="h6">Datos principales y origen de cosecha</Typography>
-    <TextField label="Acrónimo" helperText="No se modifica para preservar la identidad de la fuente." {...register('acronym')} error={Boolean(errors.acronym)} InputProps={{ readOnly: true }} />
-    <TextField label="Repositorio" {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message} required />
-    <TextField label="Institución" {...register('institutionName')} error={Boolean(errors.institutionName)} helperText={errors.institutionName?.message} required />
+  const { t } = useTranslation()
+  const cronValue = form.watch('scheduleCronExpression')
+  return <Stack spacing={2}><Typography variant="h6">{t('networks.principalData')}</Typography>
+    <TextField label={t('networks.acronym')} helperText={t('networks.acronymHelp')} {...register('acronym')} error={Boolean(errors.acronym)} InputProps={{ readOnly: true }} />
+    <TextField label={t('networks.repository')} {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message} required />
+    <TextField label={t('networks.institution')} {...register('institutionName')} error={Boolean(errors.institutionName)} helperText={errors.institutionName?.message} required />
     <TextField label="Acrónimo de institución" {...register('institutionAcronym')} />
-    <FormControlLabel control={<Checkbox {...register('published')} />} label="Fuente publicada" />
+    <FormControlLabel control={<Checkbox {...register('published')} />} label={t('networks.published')} />
     <Divider />
-    <TextField label="URL OAI-PMH" {...register('originUrl')} error={Boolean(errors.originUrl)} helperText={errors.originUrl?.message} required />
+    <TextField label={t('networks.url')} {...register('originUrl')} error={Boolean(errors.originUrl)} helperText={errors.originUrl?.message} required />
     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-      <TextField select fullWidth label="Metadata prefix" {...register('metadataPrefix')}>{capabilities.metadataFormats.map(format => <MenuItem key={format} value={format}>{format}</MenuItem>)}</TextField>
-      <TextField select fullWidth label="Formato de almacenamiento" {...register('metadataStoreSchema')}>{capabilities.metadataStoreSchemas.map(format => <MenuItem key={format} value={format}>{format}</MenuItem>)}</TextField>
+      <TextField select fullWidth label={t('networks.metadataPrefix')} {...register('metadataPrefix')}>{capabilities.metadataFormats.map(format => <MenuItem key={format} value={format}>{format}</MenuItem>)}</TextField>
+      <TextField select fullWidth label={t('networks.storageFormat')} {...register('metadataStoreSchema')}>{capabilities.metadataStoreSchemas.map(format => <MenuItem key={format} value={format}>{format}</MenuItem>)}</TextField>
     </Stack>
-    <Controller control={control} name="sets" render={({ field }) => <Autocomplete multiple freeSolo options={[]} value={field.value} onChange={(_, value) => field.onChange(value)} renderInput={params => <TextField {...params} label="Sets OAI-PMH" helperText="Añade uno o más setSpec; deja vacío para cosechar todos." />} />} />
-    <TextField label="Cron de cosecha" {...register('scheduleCronExpression')} helperText="Expresión cron de seis campos; déjalo vacío para no programar la fuente." />
+    <Controller control={control} name="sets" render={({ field }) => <Autocomplete multiple freeSolo options={[]} value={field.value} onChange={(_, value) => field.onChange(value)} renderInput={params => <TextField {...params} label={t('networks.sets')} helperText={t('networks.allSets')} />} />} />
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'flex-start' }}><TextField fullWidth label={t('networks.cron')} {...register('scheduleCronExpression')} helperText={cronValue ? undefined : t('networks.noSchedule')} /><CronEditor value={cronValue} onChange={value => form.setValue('scheduleCronExpression', value, { shouldDirty: true })} /></Stack>
   </Stack>
 }
 
+function CronEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [parts, setParts] = useState<string[]>(['0', '0', '2', '*', '*', '?'])
+  const openEditor = () => { setParts(value.trim() ? value.trim().split(/\s+/).slice(0, 6) : ['0', '0', '2', '*', '*', '?']); setOpen(true) }
+  const preset = (expression: string) => { setParts(expression ? expression.split(' ') : ['', '', '', '', '', '']) }
+  const apply = () => { onChange(parts.every(part => !part.trim()) ? '' : parts.join(' ').trim()); setOpen(false) }
+  const labels = ['Segundo', 'Minuto', 'Hora', 'Día del mes', 'Mes', 'Día de semana']
+  return <><Button variant="outlined" sx={{ whiteSpace: 'nowrap', mt: { sm: 0.8 } }} onClick={openEditor}>Editor cron</Button><Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Programación Quartz</DialogTitle><DialogContent dividers><Stack spacing={2}><Typography variant="body2" color="text.secondary">Selecciona un ejemplo o ajusta la expresión Quartz de seis campos.</Typography><Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}><Button size="small" onClick={() => preset('')}>Nunca</Button><Button size="small" onClick={() => preset('0 0 2 ? * MON')}>Una vez por semana</Button><Button size="small" onClick={() => preset('0 0 2 1 * ?')}>Una vez por mes</Button></Stack><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{parts.every(part => !part) ? 'Sin programación' : parts.join(' ')}</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1 }}>{labels.map((label, index) => <TextField key={label} label={label} size="small" value={parts[index] || ''} onChange={event => setParts(current => current.map((part, partIndex) => partIndex === index ? event.target.value : part))} />)}</Box></Stack></DialogContent><DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={apply}>Aplicar</Button></DialogActions></Dialog></>
+}
+
 function ProcessingFields({ form, validators, transformers }: { form: UseFormReturn<NetworkForm>; validators: Array<{ id: number; name: string }>; transformers: Array<{ id: number; name: string }> }) {
-  return <Stack spacing={2}><Typography variant="h6">Validadores y transformadores</Typography><Typography color="text.secondary">Estas cuatro relaciones se actualizan junto al resto de la fuente.</Typography>
-    <IdSelect label="Prevalidador" name="prevalidatorId" form={form} items={validators} emptyLabel="Sin prevalidador" />
-    <IdSelect label="Validador" name="validatorId" form={form} items={validators} emptyLabel="Sin validador" />
-    <IdSelect label="Transformador principal" name="transformerId" form={form} items={transformers} emptyLabel="Sin transformador" />
-    <IdSelect label="Transformador secundario" name="secondaryTransformerId" form={form} items={transformers} emptyLabel="Sin transformador" />
+  const { t } = useTranslation()
+  return <Stack spacing={2}><Typography variant="h6">{t('networks.validators')}</Typography><Typography color="text.secondary">{t('networks.processingRelations')}</Typography>
+    <IdSelect label="Prevalidador" name="prevalidatorId" form={form} items={validators} emptyLabel={t('networks.noPrevalidator')} />
+    <IdSelect label="Validador" name="validatorId" form={form} items={validators} emptyLabel={t('networks.noValidator')} />
+    <IdSelect label="Transformador principal" name="transformerId" form={form} items={transformers} emptyLabel={t('networks.noTransformer')} />
+    <IdSelect label="Transformador secundario" name="secondaryTransformerId" form={form} items={transformers} emptyLabel={t('networks.noTransformer')} />
   </Stack>
 }
 
@@ -147,10 +180,22 @@ function IdSelect({ label, name, form, items, emptyLabel }: { label: string; nam
   return <Controller name={name} control={form.control} render={({ field }) => <TextField select label={label} value={field.value} onChange={field.onChange}><MenuItem value="">{emptyLabel}</MenuItem>{items.map(item => <MenuItem key={item.id} value={String(item.id)}>{item.name}</MenuItem>)}</TextField>} />
 }
 
-function ProfileFields({ profile, attributes, setAttributes }: { profile: AttributeProfile | undefined; attributes: Record<string, unknown>; setAttributes: (next: Record<string, unknown>) => void }) {
-  if (!profile) return <Alert severity="error">La fuente usa un perfil de atributos que no está publicado por esta instalación v5. No se puede guardar sin seleccionar o publicar el perfil correspondiente.</Alert>
-  return <Stack spacing={2}><Typography variant="h6">{profile.name}</Typography><Typography color="text.secondary">Perfil {profile.typeId} · versión {profile.version}</Typography>
+function ProfileFields({ profile, profiles, attributes, setAttributes }: { profile: AttributeProfile | undefined; profiles: AttributeProfile[]; attributes: Record<string, unknown>; setAttributes: (next: Record<string, unknown>) => void }) {
+  const { t } = useTranslation()
+  const currentClass = typeof attributes['@class'] === 'string' ? attributes['@class'] : ''
+  const selectProfile = (className: string) => setAttributes(className
+    ? { ...attributes, '@class': className }
+    : Object.fromEntries(Object.entries(attributes).filter(([key]) => key !== '@class')))
+  return <Stack spacing={2}>
+    <TextField select label="Perfil de datos específicos" value={currentClass} onChange={event => selectProfile(event.target.value)} helperText="El perfil define los campos que se mostrarán; cambiarlo no elimina los datos existentes.">
+      <MenuItem value="">Sin perfil</MenuItem>
+      {profiles.map(item => <MenuItem key={item.typeId} value={item.className}>{item.name} · {item.typeId}</MenuItem>)}
+    </TextField>
+    {!profile && currentClass && <Alert severity="warning">{t('networks.profileUnavailable')} Los datos se conservarán hasta que selecciones un perfil publicado.</Alert>}
+    {!profile && !currentClass && <Alert severity="info">Esta fuente no tiene perfil de datos específicos. Puedes continuar editando sus datos generales o seleccionar uno.</Alert>}
+    {profile && <><Typography variant="h6">{profile.name}</Typography><Typography color="text.secondary">Perfil {profile.typeId} · versión {profile.version}</Typography>
     <Form schema={profile.schema} uiSchema={profile.uiSchema} validator={validator} formData={attributes} onChange={event => setAttributes((event.formData || {}) as Record<string, unknown>)} onSubmit={event => setAttributes((event.formData || {}) as Record<string, unknown>)} showErrorList={false}><span /></Form>
+    </>}
   </Stack>
 }
 

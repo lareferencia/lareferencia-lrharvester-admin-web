@@ -11,6 +11,7 @@ export const queryKeys = {
   attributeProfiles: ['attribute-profiles'] as const,
   capabilities: ['capabilities'] as const,
   applicationActions: ['application-actions'] as const,
+  workerConfigurations: ['worker-configurations'] as const,
   networkActions: (id: number) => ['networks', id, 'actions'] as const,
   networkSnapshots: (id: number) => ['networks', id, 'snapshots'] as const,
   diagnosticSummary: (snapshotId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'summary', filters] as const,
