@@ -20,22 +20,34 @@ import { queryKeys } from '../../api/query-keys'
 import { useAuth } from '../../auth/AuthProvider'
 import { useTranslation } from 'react-i18next'
 import AddIcon from '@mui/icons-material/Add'
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined'
+import { NetworkTransferDialog } from './NetworkTransferDialog'
 
 export function NetworkListPage({ client }: { client: ApiClient }) {
   const { t } = useTranslation()
   const [page, setPage] = useState(0)
   const [q, setQ] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
+  const [transferOpen, setTransferOpen] = useState(false)
   const params = useMemo(() => new URLSearchParams({ page: String(page), size: '25', sort: 'acronym,asc', ...(q ? { q } : {}) }), [page, q])
   const query = useQuery({ queryKey: queryKeys.networkSummaries(params.toString()), queryFn: () => client.networkSummaries(params), placeholderData: previous => previous, refetchInterval: 10_000 })
   const capabilities = useQuery({ queryKey: queryKeys.capabilities, queryFn: () => client.capabilities() })
   const { user } = useAuth()
   const canOperate = user?.roles.includes('ADMIN') === true
+  const exportSources = useMutation({
+    mutationFn: () => client.exportNetworksXlsx(),
+    onSuccess: file => {
+      const url = URL.createObjectURL(file); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'fuentes.xlsx'; anchor.click(); URL.revokeObjectURL(url)
+      setNotice(t('networks.exportSuccess'))
+    },
+  })
 
   const total = query.data?.totalElements ?? 0
   const activeNetworks = query.data?.items.filter(network => network.runtime.runningCount > 0 || network.runtime.queuedCount > 0).length ?? 0
   return <Stack spacing={3}>
-    <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, color: 'common.white', overflow: 'hidden', position: 'relative', background: 'linear-gradient(125deg, #173c5c 0%, #245b78 62%, #207a64 140%)', '&:before': { content: '""', position: 'absolute', width: 330, height: 330, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.07)', right: -90, top: -150 } }}><Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between" alignItems={{ md: 'flex-end' }}><Box sx={{ position: 'relative' }}><Typography variant="overline" sx={{ opacity: .7, fontWeight: 800, letterSpacing: '.12em' }}>{t('networks.center')}</Typography><Typography variant="h4" sx={{ color: 'inherit', mt: .25 }}>{t('networks.title')}</Typography><Typography sx={{ opacity: .82, mt: .8 }}>{t('networks.subtitle')}</Typography></Box><Stack direction="row" spacing={1.2} sx={{ position: 'relative' }}><Metric label={t('networks.sources')} value={total} /><Metric label={t('networks.active')} value={activeNetworks} accent />{canOperate && <Button component={Link} to="/networks/new" variant="contained" color="secondary" startIcon={<AddIcon />}>Nueva fuente</Button>}</Stack></Stack></Paper>
+    <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, color: 'common.white', overflow: 'hidden', position: 'relative', background: 'linear-gradient(125deg, #173c5c 0%, #245b78 62%, #207a64 140%)', '&:before': { content: '""', position: 'absolute', width: 330, height: 330, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.07)', right: -90, top: -150 } }}><Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between" alignItems={{ md: 'flex-end' }}><Box sx={{ position: 'relative' }}><Typography variant="overline" sx={{ opacity: .7, fontWeight: 800, letterSpacing: '.12em' }}>{t('networks.center')}</Typography><Typography variant="h4" sx={{ color: 'inherit', mt: .25 }}>{t('networks.title')}</Typography><Typography sx={{ opacity: .82, mt: .8 }}>{t('networks.subtitle')}</Typography></Box><Stack direction="row" spacing={1.2} sx={{ position: 'relative' }}><Metric label={t('networks.sources')} value={total} /><Metric label={t('networks.active')} value={activeNetworks} accent /></Stack></Stack></Paper>
+    {canOperate && <Paper variant="outlined" sx={{ px: 1.25, py: 1, bgcolor: 'background.paper' }}><Stack direction="row" spacing={1} useFlexGap flexWrap="wrap"><Button component={Link} to="/networks/new" variant="contained" startIcon={<AddIcon />}>{t('networks.newSource')}</Button><Button variant="outlined" startIcon={<UploadFileOutlinedIcon />} onClick={() => setTransferOpen(true)}>{t('networks.importSources')}</Button><Button variant="outlined" startIcon={<DownloadOutlinedIcon />} disabled={exportSources.isPending} onClick={() => exportSources.mutate()}>{t('networks.exportSources')}</Button></Stack>{exportSources.isError && <Alert severity="error" sx={{ mt: 1 }}>{(exportSources.error as ApiError).message}</Alert>}</Paper>}
     {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
     <Paper variant="outlined" sx={{ p: 1.25 }}><TextField placeholder={t('networks.search')} value={q} onChange={event => { setPage(0); setQ(event.target.value) }} fullWidth InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }} /></Paper>
     {query.isError && <Alert severity="error">{t('networks.loadError')}</Alert>}
@@ -43,6 +55,7 @@ export function NetworkListPage({ client }: { client: ApiClient }) {
       <TableCell>ID</TableCell><TableCell>{t('networks.acronym')}</TableCell><TableCell>{t('networks.repository')}</TableCell><TableCell>{t('networks.institution')}</TableCell><TableCell>{t('networks.latestSnapshot')}</TableCell><TableCell>{t('common.state')}</TableCell><TableCell align="right">{t('common.actions')}</TableCell><TableCell align="center" sx={{ width: 46 }} />
     </TableRow></TableHead><TableBody>{query.data?.items.map(network => <NetworkRow key={network.id} network={network} client={client} actions={capabilities.data?.actions || []} canOperate={canOperate} onAccepted={receipt => setNotice(`${network.acronym}: ${receipt.command} aceptado (${receipt.requestId}). ${receipt.message || ''}`)} />)}</TableBody></Table></Box></Paper>}
     {query.data && <Pagination page={page + 1} count={Math.max(1, query.data.totalPages)} onChange={(_, value) => setPage(value - 1)} />}
+    <NetworkTransferDialog open={transferOpen} client={client} onClose={() => setTransferOpen(false)} onImported={setNotice} />
   </Stack>
 }
 

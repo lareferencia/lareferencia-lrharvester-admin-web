@@ -39,6 +39,10 @@ export type Network = {
 }
 
 export type NetworkRequest = Omit<Network, 'id'>
+export type NetworkImportMode = 'CREATE_ONLY' | 'UPDATE_ONLY' | 'UPSERT'
+export type NetworkImportRow = { row: number; acronym: string; operation: 'CREATE' | 'UPDATE'; errors: string[]; warnings: string[]; valid: boolean }
+export type NetworkImportValidation = { format: string; version: number; mode: NetworkImportMode; totalRows: number; validRows: number; invalidRows: number; rows: NetworkImportRow[] }
+export type NetworkImportResult = { validation: NetworkImportValidation; created: number; updated: number }
 
 export type NamedConfiguration = { id: number; name: string; description: string | null }
 export type ConfigurationExport = { format: string; version: number; kind: 'validator' | 'transformer'; exportedAt: string; configuration: Record<string, unknown> }

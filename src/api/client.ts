@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -28,10 +28,27 @@ export class ApiClient {
     return response.text()
   }
 
+  private async requestBlob(path: string): Promise<Blob> {
+    const headers = new Headers()
+    if (this.credentials) headers.set('Authorization', `Basic ${btoa(`${this.credentials.username}:${this.credentials.password}`)}`)
+    const response = await fetch(`${this.baseUrl}${path}`, { headers })
+    if (!response.ok) throw await asApiError(response)
+    return response.blob()
+  }
+
   me() { return this.request<CurrentUser>('/me') }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }
   createNetwork(request: NetworkRequest) { return this.request<Network>('/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  exportNetworksXlsx() { return this.requestBlob('/network-transfers/export.xlsx') }
+  validateNetworkImport(file: File, mode: NetworkImportMode) {
+    const body = new FormData(); body.append('file', file)
+    return this.request<NetworkImportValidation>(`/network-transfers/import/validate?mode=${mode}`, { method: 'POST', body })
+  }
+  importNetworksXlsx(file: File, mode: NetworkImportMode) {
+    const body = new FormData(); body.append('file', file)
+    return this.request<NetworkImportResult>(`/network-transfers/import?mode=${mode}`, { method: 'POST', body })
+  }
   networkSnapshots(id: number) { return this.request<PageResponse<Snapshot>>(`/networks/${id}/snapshots?page=0&size=100`) }
   updateNetwork(id: number, request: NetworkRequest) {
     return this.request<Network>(`/networks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
