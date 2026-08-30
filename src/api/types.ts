@@ -40,6 +40,7 @@ export type Network = {
 export type NetworkRequest = Omit<Network, 'id'>
 
 export type NamedConfiguration = { id: number; name: string; description: string | null }
+export type ConfigurationExport = { format: string; version: number; kind: 'validator' | 'transformer'; exportedAt: string; configuration: Record<string, unknown> }
 export type Rule = {
   id?: number; typeId: string; className?: string; name: string; description: string | null
   mandatory?: boolean | null; quantifier?: string | null; runOrder?: number | null

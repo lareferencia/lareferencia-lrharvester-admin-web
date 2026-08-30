@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -40,6 +40,10 @@ export class ApiClient {
   transformers() { return this.request<PageResponse<NamedConfiguration>>('/transformers?page=0&size=200') }
   validator(id: number) { return this.request<ValidatorConfiguration>(`/validators/${id}`) }
   transformer(id: number) { return this.request<TransformerConfiguration>(`/transformers/${id}`) }
+  exportValidator(id: number) { return this.request<ConfigurationExport>(`/validators/${id}/export`) }
+  exportTransformer(id: number) { return this.request<ConfigurationExport>(`/transformers/${id}/export`) }
+  importValidator(value: ConfigurationExport) { return this.request<ValidatorConfiguration>('/validators/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }) }
+  importTransformer(value: ConfigurationExport) { return this.request<TransformerConfiguration>('/transformers/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }) }
   ruleTypes(kind: 'validator' | 'transformer', locale = 'es') { return this.request<RuleType[]>(`/rule-types?kind=${kind}&locale=${encodeURIComponent(locale)}`) }
   validatorUsage(id: number) { return this.request<Usage>(`/validators/${id}/usage`) }
   transformerUsage(id: number) { return this.request<Usage>(`/transformers/${id}/usage`) }
