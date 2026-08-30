@@ -40,6 +40,16 @@ const resources = {
   } },
 } as const
 
+const batchNetworkTranslations = {
+  es: { batchSelected: '{{count}} fuentes seleccionadas', batchClear: 'Limpiar selección', batchExecute: 'Ejecutar acción', batchTitle: 'Ejecutar acción sobre {{count}} fuentes', batchDescription: 'La misma acción se enviará de forma asíncrona a las fuentes seleccionadas.', batchChooseAction: 'Selecciona una acción', batchIncremental: 'Ejecución incremental', batchCompleted: '{{accepted}} aceptadas · {{rejected}} rechazadas', batchRejected: 'Acciones rechazadas', batchSelectVisible: 'Seleccionar fuentes visibles' },
+  en: { batchSelected: '{{count}} selected sources', batchClear: 'Clear selection', batchExecute: 'Run action', batchTitle: 'Run action for {{count}} sources', batchDescription: 'The same action will be submitted asynchronously to the selected sources.', batchChooseAction: 'Select an action', batchIncremental: 'Incremental execution', batchCompleted: '{{accepted}} accepted · {{rejected}} rejected', batchRejected: 'Rejected actions', batchSelectVisible: 'Select visible sources' },
+  pt: { batchSelected: '{{count}} fontes selecionadas', batchClear: 'Limpar seleção', batchExecute: 'Executar ação', batchTitle: 'Executar ação em {{count}} fontes', batchDescription: 'A mesma ação será enviada de forma assíncrona às fontes selecionadas.', batchChooseAction: 'Selecione uma ação', batchIncremental: 'Execução incremental', batchCompleted: '{{accepted}} aceitas · {{rejected}} rejeitadas', batchRejected: 'Ações rejeitadas', batchSelectVisible: 'Selecionar fontes visíveis' },
+} as const
+
+for (const language of ['es', 'en', 'pt'] as const) {
+  Object.assign(resources[language].translation.networks, batchNetworkTranslations[language])
+}
+
 const saved = localStorage.getItem('lrharvester.locale')
 void i18n.use(initReactI18next).init({ resources, lng: saved || navigator.language.split('-')[0], fallbackLng: 'es', interpolation: { escapeValue: false } })
 i18n.on('languageChanged', language => localStorage.setItem('lrharvester.locale', language))

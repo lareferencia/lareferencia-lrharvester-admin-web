@@ -79,6 +79,7 @@ export type CurrentUser = { username: string; displayName: string; roles: string
 export type CommandType = 'RUN_ACTION' | 'RUN_ENABLED_ACTIONS' | 'CANCEL_ALL' | 'RESCHEDULE'
 export type CommandRequest = { type: CommandType; actionName?: string; incremental?: boolean }
 export type CommandReceipt = { requestId: string; networkId: number; command: CommandType; result: 'ACCEPTED' | 'REJECTED'; acceptedAt: string; runtimeUrl: string; message: string | null }
+export type BatchCommandReceipt = { requestId: string; acceptedAt: string; children: CommandReceipt[] }
 export type ApiProblem = { status?: number; title?: string; detail?: string; code?: string; traceId?: string; violations?: Array<{ field: string; message: string }> }
 
 export type ApplicationActionState = 'ENABLED' | 'DISABLED' | 'UNAVAILABLE' | 'INVALID_CONFIGURATION'

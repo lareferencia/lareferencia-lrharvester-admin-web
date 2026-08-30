@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -111,5 +111,8 @@ export class ApiClient {
   command(id: number, command: CommandType | CommandRequest): Promise<CommandReceipt> {
     const request = typeof command === 'string' ? { type: command } : command
     return this.request(`/networks/${id}/commands`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
+  }
+  batchCommand(networkIds: number[], command: CommandRequest): Promise<BatchCommandReceipt> {
+    return this.request('/network-command-batches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ networkIds, command }) })
   }
 }

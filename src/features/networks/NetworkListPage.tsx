@@ -9,7 +9,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined'
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined'
 import { useMemo, useState, type MouseEvent } from 'react'
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Menu, MenuItem, Pagination, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Menu, MenuItem, Pagination, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined'
 import { NetworkTransferDialog } from './NetworkTransferDialog'
+import { NetworkBatchCommandDialog } from './NetworkBatchCommandDialog'
 
 export function NetworkListPage({ client }: { client: ApiClient }) {
   const { t } = useTranslation()
@@ -30,6 +31,8 @@ export function NetworkListPage({ client }: { client: ApiClient }) {
   const [q, setQ] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [batchOpen, setBatchOpen] = useState(false)
   const params = useMemo(() => new URLSearchParams({ page: String(page), size: '25', sort: 'acronym,asc', ...(q ? { q } : {}) }), [page, q])
   const query = useQuery({ queryKey: queryKeys.networkSummaries(params.toString()), queryFn: () => client.networkSummaries(params), placeholderData: previous => previous, refetchInterval: 10_000 })
   const capabilities = useQuery({ queryKey: queryKeys.capabilities, queryFn: () => client.capabilities() })
@@ -45,17 +48,24 @@ export function NetworkListPage({ client }: { client: ApiClient }) {
 
   const total = query.data?.totalElements ?? 0
   const activeNetworks = query.data?.items.filter(network => network.runtime.runningCount > 0 || network.runtime.queuedCount > 0).length ?? 0
+  const visibleNetworks = query.data?.items || []
+  const selectedNetworks = visibleNetworks.filter(network => selectedIds.includes(network.id))
+  const allVisibleSelected = visibleNetworks.length > 0 && selectedNetworks.length === visibleNetworks.length
+  const toggleNetwork = (id: number) => setSelectedIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+  const clearSelection = () => setSelectedIds([])
   return <Stack spacing={3}>
     <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, color: 'common.white', overflow: 'hidden', position: 'relative', background: 'linear-gradient(125deg, #173c5c 0%, #245b78 62%, #207a64 140%)', '&:before': { content: '""', position: 'absolute', width: 330, height: 330, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.07)', right: -90, top: -150 } }}><Stack direction={{ xs: 'column', md: 'row' }} spacing={3} justifyContent="space-between" alignItems={{ md: 'flex-end' }}><Box sx={{ position: 'relative' }}><Typography variant="overline" sx={{ opacity: .7, fontWeight: 800, letterSpacing: '.12em' }}>{t('networks.center')}</Typography><Typography variant="h4" sx={{ color: 'inherit', mt: .25 }}>{t('networks.title')}</Typography><Typography sx={{ opacity: .82, mt: .8 }}>{t('networks.subtitle')}</Typography></Box><Stack direction="row" spacing={1.2} sx={{ position: 'relative' }}><Metric label={t('networks.sources')} value={total} /><Metric label={t('networks.active')} value={activeNetworks} accent /></Stack></Stack></Paper>
     {canOperate && <Paper variant="outlined" sx={{ px: 1.25, py: 1, bgcolor: 'background.paper' }}><Stack direction="row" spacing={1} useFlexGap flexWrap="wrap"><Button component={Link} to="/networks/new" variant="contained" startIcon={<AddIcon />}>{t('networks.newSource')}</Button><Button variant="outlined" startIcon={<UploadFileOutlinedIcon />} onClick={() => setTransferOpen(true)}>{t('networks.importSources')}</Button><Button variant="outlined" startIcon={<DownloadOutlinedIcon />} disabled={exportSources.isPending} onClick={() => exportSources.mutate()}>{t('networks.exportSources')}</Button></Stack>{exportSources.isError && <Alert severity="error" sx={{ mt: 1 }}>{(exportSources.error as ApiError).message}</Alert>}</Paper>}
     {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
-    <Paper variant="outlined" sx={{ p: 1.25 }}><TextField placeholder={t('networks.search')} value={q} onChange={event => { setPage(0); setQ(event.target.value) }} fullWidth InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }} /></Paper>
+    <Paper variant="outlined" sx={{ p: 1.25 }}><TextField placeholder={t('networks.search')} value={q} onChange={event => { setPage(0); clearSelection(); setQ(event.target.value) }} fullWidth InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }} /></Paper>
+    {canOperate && selectedNetworks.length > 0 && <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderColor: 'primary.light', bgcolor: 'primary.50' }}><Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }} justifyContent="space-between"><Typography fontWeight={700}>{t('networks.batchSelected', { count: selectedNetworks.length })}</Typography><Stack direction="row" spacing={1}><Button size="small" onClick={clearSelection}>{t('networks.batchClear')}</Button><Button size="small" variant="contained" startIcon={<BoltIcon />} onClick={() => setBatchOpen(true)}>{t('networks.batchExecute')}</Button></Stack></Stack></Paper>}
     {query.isError && <Alert severity="error">{t('networks.loadError')}</Alert>}
     {query.isLoading ? <CircularProgress /> : <Paper variant="outlined" sx={{ overflow: 'hidden' }}><Box sx={{ px: 2.5, py: 1.8, borderBottom: '1px solid', borderColor: 'divider' }}><Typography fontWeight={750}>{t('networks.inventory')}</Typography><Typography variant="body2" color="text.secondary">{t('networks.results', { count: total })} · {t('networks.refresh')}</Typography></Box><Box sx={{ overflowX: 'auto' }}><Table><TableHead><TableRow>
-      <TableCell>ID</TableCell><TableCell>{t('networks.acronym')}</TableCell><TableCell>{t('networks.repository')}</TableCell><TableCell>{t('networks.institution')}</TableCell><TableCell>{t('networks.latestSnapshot')}</TableCell><TableCell>{t('common.state')}</TableCell><TableCell align="right">{t('common.actions')}</TableCell><TableCell align="center" sx={{ width: 46 }} />
-    </TableRow></TableHead><TableBody>{query.data?.items.map(network => <NetworkRow key={network.id} network={network} client={client} actions={capabilities.data?.actions || []} canOperate={canOperate} onAccepted={receipt => setNotice(`${network.acronym}: ${receipt.command} aceptado (${receipt.requestId}). ${receipt.message || ''}`)} />)}</TableBody></Table></Box></Paper>}
-    {query.data && <Pagination page={page + 1} count={Math.max(1, query.data.totalPages)} onChange={(_, value) => setPage(value - 1)} />}
+      {canOperate && <TableCell padding="checkbox"><Checkbox checked={allVisibleSelected} indeterminate={selectedNetworks.length > 0 && !allVisibleSelected} onChange={() => setSelectedIds(allVisibleSelected ? [] : visibleNetworks.map(network => network.id))} inputProps={{ 'aria-label': t('networks.batchSelectVisible') }} /></TableCell>}<TableCell>ID</TableCell><TableCell>{t('networks.acronym')}</TableCell><TableCell>{t('networks.repository')}</TableCell><TableCell>{t('networks.institution')}</TableCell><TableCell>{t('networks.latestSnapshot')}</TableCell><TableCell>{t('common.state')}</TableCell><TableCell align="right">{t('common.actions')}</TableCell><TableCell align="center" sx={{ width: 46 }} />
+    </TableRow></TableHead><TableBody>{query.data?.items.map(network => <NetworkRow key={network.id} network={network} client={client} actions={capabilities.data?.actions || []} canOperate={canOperate} selected={selectedIds.includes(network.id)} onSelect={() => toggleNetwork(network.id)} onAccepted={receipt => setNotice(`${network.acronym}: ${receipt.command} aceptado (${receipt.requestId}). ${receipt.message || ''}`)} />)}</TableBody></Table></Box></Paper>}
+    {query.data && <Pagination page={page + 1} count={Math.max(1, query.data.totalPages)} onChange={(_, value) => { clearSelection(); setPage(value - 1) }} />}
     <NetworkTransferDialog open={transferOpen} client={client} onClose={() => setTransferOpen(false)} onImported={setNotice} />
+    <NetworkBatchCommandDialog open={batchOpen} client={client} networks={selectedNetworks} actions={capabilities.data?.actions || []} onClose={() => setBatchOpen(false)} onCompleted={message => { setBatchOpen(false); clearSelection(); setNotice(message) }} />
   </Stack>
 }
 
@@ -63,7 +73,7 @@ function Metric({ label, value, accent = false }: { label: string; value: number
   return <Box sx={{ minWidth: 88, px: 1.6, py: 1.1, borderRadius: 2, bgcolor: accent ? 'rgba(213,154,42,.92)' : 'rgba(255,255,255,.12)', color: accent ? 'primary.dark' : 'inherit', backdropFilter: 'blur(8px)' }}><Typography variant="h6" lineHeight={1} fontWeight={800}>{value}</Typography><Typography variant="caption" fontWeight={700} sx={{ opacity: .78 }}>{label}</Typography></Box>
 }
 
-function NetworkRow({ network, client, actions, canOperate, onAccepted }: { network: NetworkSummary; client: ApiClient; actions: CapabilityAction[]; canOperate: boolean; onAccepted: (receipt: CommandReceipt) => void }) {
+function NetworkRow({ network, client, actions, canOperate, selected, onSelect, onAccepted }: { network: NetworkSummary; client: ApiClient; actions: CapabilityAction[]; canOperate: boolean; selected: boolean; onSelect: () => void; onAccepted: (receipt: CommandReceipt) => void }) {
   const cache = useQueryClient()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -84,6 +94,7 @@ function NetworkRow({ network, client, actions, canOperate, onAccepted }: { netw
   const orderedActions = [...actions].sort((left, right) => (left.order ?? 9999) - (right.order ?? 9999))
 
   return <TableRow hover sx={{ '& > *': { py: 1.45 }, ...(active ? { '& > *': { bgcolor: 'rgba(32, 122, 100, .045)' } } : {}) }}>
+    {canOperate && <TableCell padding="checkbox"><Checkbox checked={selected} onChange={onSelect} inputProps={{ 'aria-label': `Seleccionar ${network.acronym}` }} /></TableCell>}
     <TableCell><Typography variant="caption" sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: 'text.secondary', fontWeight: 700 }}>#{network.id}</Typography></TableCell><TableCell><Typography fontWeight={800} color="primary.dark">{network.acronym}</Typography></TableCell>
     <TableCell><Typography>{network.name}</Typography></TableCell>
     <TableCell><Typography>{network.institutionName}</Typography><Typography variant="body2" color="text.secondary">{network.institutionAcronym || '—'}</Typography></TableCell>
