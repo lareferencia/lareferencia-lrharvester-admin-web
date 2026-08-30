@@ -10,6 +10,7 @@ import validator from '@rjsf/validator-ajv8'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { ApiClient } from '../../api/client'
 import type { ApiError } from '../../api/problem-detail'
 import type { Rule, RuleType } from '../../api/types'
@@ -20,9 +21,11 @@ const title: Record<Kind, string> = { validator: 'validador', transformer: 'tran
 const blankRule = (typeId = ''): Rule => ({ typeId, name: '', description: '', mandatory: false, quantifier: 'ONE_OR_MORE', runOrder: 0, configuration: {} })
 
 export function ConfigurationEditPage({ client, kind }: { client: ApiClient; kind: Kind }) {
+  const { i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0]
   const rawId = useParams().id; const isNew = rawId === 'new'; const id = Number(rawId); const cache = useQueryClient(); const navigate = useNavigate()
   const detail = useQuery({ queryKey: kind === 'validator' ? queryKeys.validator(id) : queryKeys.transformer(id), queryFn: () => kind === 'validator' ? client.validator(id) : client.transformer(id), enabled: !isNew && Number.isSafeInteger(id) })
-  const types = useQuery({ queryKey: queryKeys.ruleTypes(kind), queryFn: () => client.ruleTypes(kind) })
+  const types = useQuery({ queryKey: queryKeys.ruleTypes(kind, locale), queryFn: () => client.ruleTypes(kind, locale) })
   const [name, setName] = useState(''); const [description, setDescription] = useState(''); const [rules, setRules] = useState<Rule[]>([]); const [ruleErrors, setRuleErrors] = useState<Record<number, string>>({}); const [selectedRule, setSelectedRule] = useState<number | null>(null); const [ruleNotice, setRuleNotice] = useState<string | null>(null); const [configurationNotice, setConfigurationNotice] = useState<string | null>(null); const [pendingDeletion, setPendingDeletion] = useState<number | null>(null)
   useEffect(() => { if (detail.data) { setName(detail.data.name); setDescription(detail.data.description || ''); setRules(detail.data.rules) } }, [detail.data])
   const save = useMutation({ mutationFn: () => {

@@ -40,7 +40,7 @@ export class ApiClient {
   transformers() { return this.request<PageResponse<NamedConfiguration>>('/transformers?page=0&size=200') }
   validator(id: number) { return this.request<ValidatorConfiguration>(`/validators/${id}`) }
   transformer(id: number) { return this.request<TransformerConfiguration>(`/transformers/${id}`) }
-  ruleTypes(kind: 'validator' | 'transformer') { return this.request<RuleType[]>(`/rule-types?kind=${kind}&locale=es`) }
+  ruleTypes(kind: 'validator' | 'transformer', locale = 'es') { return this.request<RuleType[]>(`/rule-types?kind=${kind}&locale=${encodeURIComponent(locale)}`) }
   validatorUsage(id: number) { return this.request<Usage>(`/validators/${id}/usage`) }
   transformerUsage(id: number) { return this.request<Usage>(`/transformers/${id}/usage`) }
   createValidator(request: Omit<ValidatorConfiguration, 'id'>) { return this.request<ValidatorConfiguration>('/validators', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }

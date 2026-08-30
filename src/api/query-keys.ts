@@ -7,7 +7,7 @@ export const queryKeys = {
   validator: (id: number) => ['validator', id] as const,
   transformers: ['transformers'] as const,
   transformer: (id: number) => ['transformer', id] as const,
-  ruleTypes: (kind: 'validator' | 'transformer') => ['rule-types', kind] as const,
+  ruleTypes: (kind: 'validator' | 'transformer', locale = 'es') => ['rule-types', kind, locale] as const,
   attributeProfiles: ['attribute-profiles'] as const,
   capabilities: ['capabilities'] as const,
   applicationActions: ['application-actions'] as const,
