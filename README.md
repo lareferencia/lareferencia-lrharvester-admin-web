@@ -19,6 +19,34 @@ en `http://localhost:8090`. Se puede indicar otro origen como primer argumento:
 
 La autenticación `file` usa HTTP Basic. Las credenciales permanecen solamente en memoria del navegador y se descartan al recargar o cerrar la pestaña. Para producción se recomienda configurar OIDC y completar su adaptador en `src/auth`.
 
+## Compilación para el harvester
+
+El frontend de producción se genera directamente en el directorio externo
+`static` del harvester, sin copiar recursos a `target`:
+
+```bash
+./build.sh
+```
+
+El script delega en Maven: instala una versión fijada de Node, ejecuta `npm ci`,
+compila la aplicación y sincroniza `dist/` con
+`../lareferencia-lrharvester-app/static/`. El harvester sirve ese directorio en
+la raíz de `8090`; nunca se sirve contenido desde `target`. La interfaz
+anterior permanece en `static-legacy` y puede abrirse mediante `/legacy/`.
+
+También puede usarse Maven directamente, por ejemplo en CI:
+
+```bash
+mvn package
+```
+
+Para un checkout donde el harvester no sea un repositorio hermano, indicar el
+destino de forma explícita:
+
+```bash
+mvn package -Dharvester.static.dir=/ruta/a/lareferencia-lrharvester-app/static
+```
+
 ## Contrato API
 
 El cliente del vertical inicial está tipado a partir del contrato v5. Cuando el backend esté disponible, regenerar tipos con:
