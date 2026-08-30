@@ -5,6 +5,7 @@ export type Snapshot = {
   startTime: string | null; endTime: string | null; size: number | null
   validSize: number | null; transformedSize: number | null; deleted: boolean
 }
+export type MetadataCleanupPreview = { networkId: number; protectedSnapshotIds: number[]; oaiReferences: number; validationReferences: number; metadataEntriesScanned: number; orphanCandidates: number; falsePositiveProbability: number }
 
 export type DiagnosticFilterField = 'IDENTIFIER' | 'VALID' | 'TRANSFORMED' | 'RULE_VALID' | 'RULE_INVALID'
 export type DiagnosticFilter = { field: DiagnosticFilterField; operator?: 'EQ' | 'CONTAINS'; value: string | boolean | number }

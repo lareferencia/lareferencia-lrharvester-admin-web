@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -84,6 +84,7 @@ export class ApiClient {
     return this.request<NetworkActionConfiguration>(`/networks/${id}/actions/${encodeURIComponent(actionKey)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
   }
   networkRuntime(id: number) { return this.request<RuntimeSummary['processes']>(`/networks/${id}/runtime`) }
+  previewMetadataCleanup(id: number) { return this.request<MetadataCleanupPreview>(`/networks/${id}/metadata-cleanup/preview`, { method: 'POST' }) }
   diagnosticSummary(snapshotId: number, filters: DiagnosticQuery['filters']) { return this.request<DiagnosticSummary>(`/snapshots/${snapshotId}/diagnostics/summary/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters }) }) }
   diagnosticRecords(snapshotId: number, query: DiagnosticQuery) { return this.request<PageResponse<DiagnosticRecord>>(`/snapshots/${snapshotId}/diagnostics/records/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query) }) }
   diagnosticOccurrences(snapshotId: number, ruleId: number, filters: DiagnosticQuery['filters']) { return this.request<RuleOccurrences>(`/snapshots/${snapshotId}/diagnostics/rules/${ruleId}/occurrences/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters }) }) }

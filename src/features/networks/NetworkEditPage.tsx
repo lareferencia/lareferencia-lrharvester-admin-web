@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import type { ApiClient } from '../../api/client'
 import type { ApiError } from '../../api/problem-detail'
-import type { ApplicationAction, AttributeProfile, Capabilities, NetworkActionConfiguration, NetworkRequest } from '../../api/types'
+import type { ApplicationAction, AttributeProfile, Capabilities, MetadataCleanupPreview, NetworkActionConfiguration, NetworkRequest } from '../../api/types'
 import { queryKeys } from '../../api/query-keys'
 import { useTranslation } from 'react-i18next'
 
@@ -127,7 +127,15 @@ function NetworkActionsEditor({ client, networkId, actions, catalog, loading, di
     {actionSaved && <Alert severity="success" onClose={() => setActionSaved(false)}>La configuración de la acción se guardó correctamente.</Alert>}
     {updateAction.isError && <ApiProblemAlert error={updateAction.error as ApiError} />}
     {orderedActions.map(action => { const definition = catalog.find(item => item.actionKey === action.actionKey)?.definition; return <Paper key={action.actionKey} variant="outlined" sx={{ p: 2 }}><Stack spacing={1}><Stack direction="row" justifyContent="space-between" alignItems="center"><Box><Typography fontWeight={600}>{definition?.description || definition?.name || action.actionKey}</Typography><Typography variant="caption" color="text.secondary"><code>{action.actionKey}</code></Typography></Box><Typography variant="body2" color="text.secondary">{action.globalState}</Typography></Stack><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><FormControlLabel control={<Checkbox checked={action.enabled} disabled={disabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, enabled: event.target.checked })} />} label={t('networks.manual')} /><FormControlLabel control={<Checkbox checked={action.scheduleEnabled} disabled={disabled || !action.enabled || action.globalState !== 'ENABLED'} onChange={event => updateAction.mutate({ ...action, scheduleEnabled: event.target.checked })} />} label={t('networks.scheduled')} /></Stack>{Object.keys(action.schema.properties || {}).length > 0 && <ActionConfigurationForm action={action} disabled={disabled} saving={updateAction.isPending} onSave={configuration => updateAction.mutate({ ...action, configuration })} />}</Stack></Paper> })}
+    <MetadataCleanupPreviewPanel client={client} networkId={networkId} disabled={disabled} />
   </Stack>
+}
+
+function MetadataCleanupPreviewPanel({ client, networkId, disabled }: { client: ApiClient; networkId: number; disabled: boolean }) {
+  const { t } = useTranslation()
+  const [result, setResult] = useState<MetadataCleanupPreview | null>(null)
+  const preview = useMutation({ mutationFn: () => client.previewMetadataCleanup(networkId), onSuccess: setResult })
+  return <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}><Stack spacing={1}><Typography variant="subtitle1">{t('networks.metadataMaintenance')}</Typography><Typography variant="body2" color="text.secondary">{t('networks.metadataMaintenanceDescription')}</Typography><Box><Button size="small" variant="outlined" disabled={disabled || preview.isPending} onClick={() => preview.mutate()}>{t('networks.analyzeMetadata')}</Button></Box>{preview.isError && <ApiProblemAlert error={preview.error as ApiError} />}{result && <Alert severity="info">{t('networks.metadataPreviewResult', { snapshots: result.protectedSnapshotIds.join(', '), scanned: result.metadataEntriesScanned, candidates: result.orphanCandidates })}</Alert>}</Stack></Paper>
 }
 
 function ActionConfigurationForm({ action, disabled, saving, onSave }: { action: NetworkActionConfiguration; disabled: boolean; saving: boolean; onSave: (configuration: Record<string, unknown>) => void }) {
