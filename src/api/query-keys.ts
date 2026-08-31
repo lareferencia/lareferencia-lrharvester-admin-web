@@ -19,4 +19,6 @@ export const queryKeys = {
   diagnosticOccurrences: (snapshotId: number, ruleId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'occurrences', ruleId, filters] as const,
   snapshotLogs: (snapshotId: number) => ['snapshots', snapshotId, 'logs'] as const,
   runtime: ['runtime'] as const,
+  darkSummary: (naan?: string) => ['dark-summary', naan ?? 'all'] as const,
+  darkRecords: (query: string) => ['dark-records', query] as const,
 }

@@ -4,6 +4,7 @@ import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined'
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import MemoryOutlinedIcon from '@mui/icons-material/MemoryOutlined'
+import FingerprintOutlinedIcon from '@mui/icons-material/FingerprintOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import TransformOutlinedIcon from '@mui/icons-material/TransformOutlined'
 import { Avatar, Box, Button, Container, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, MenuItem, Select, Stack, Toolbar, Tooltip, Typography } from '@mui/material'
@@ -20,7 +21,7 @@ export function AppLayout() {
   const { t, i18n } = useTranslation()
   const location = useLocation()
   const navigation = [
-    { label: t('nav.networks'), to: '/networks', icon: <DashboardOutlinedIcon /> }, { label: t('nav.validators'), to: '/validators', icon: <FactCheckOutlinedIcon /> }, { label: t('nav.transformers'), to: '/transformers', icon: <TransformOutlinedIcon /> }, { label: t('nav.actions'), to: '/actions', icon: <BoltOutlinedIcon /> }, { label: t('nav.runtime'), to: '/runtime', icon: <MemoryOutlinedIcon /> },
+    { label: t('nav.networks'), to: '/networks', icon: <DashboardOutlinedIcon /> }, { label: t('nav.validators'), to: '/validators', icon: <FactCheckOutlinedIcon /> }, { label: t('nav.transformers'), to: '/transformers', icon: <TransformOutlinedIcon /> }, { label: t('nav.actions'), to: '/actions', icon: <BoltOutlinedIcon /> }, { label: t('nav.dark'), to: '/dark', icon: <FingerprintOutlinedIcon /> }, { label: t('nav.runtime'), to: '/runtime', icon: <MemoryOutlinedIcon /> },
   ]
   const [expanded, setExpanded] = useState(false)
   const currentWidth = expanded ? drawerWidth : collapsedDrawerWidth

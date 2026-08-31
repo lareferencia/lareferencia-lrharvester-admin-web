@@ -6,6 +6,7 @@ import { NetworkEditPage } from '../features/networks/NetworkEditPage'
 import { NetworkListPage } from '../features/networks/NetworkListPage'
 import { NetworkCreatePage } from '../features/networks/NetworkCreatePage'
 import { RuntimePage } from '../features/runtime/RuntimePage'
+import { DarkPage } from '../features/dark/DarkPage'
 import { ConfigurationListPage } from '../features/configurations/ConfigurationListPage'
 import { ConfigurationEditPage } from '../features/configurations/ConfigurationEditPage'
 import { ApplicationActionsPage } from '../features/actions/ApplicationActionsPage'
@@ -29,6 +30,7 @@ export function createRouter(client: ApiClient) {
       { path: 'transformers', element: <ConfigurationListPage client={client} kind="transformer" /> },
       { path: 'transformers/:id', element: <RequireRole role="ADMIN"><ConfigurationEditPage client={client} kind="transformer" /></RequireRole> },
       { path: 'runtime', element: <RuntimePage client={client} /> },
+      { path: 'dark', element: <DarkPage client={client} /> },
       { path: 'actions', element: <ApplicationActionsPage client={client} /> },
       { path: 'forbidden', element: simplePage('Acceso denegado', 'No tienes permisos para esta sección.') },
       { path: '*', element: simplePage('No encontrado', 'La página solicitada no existe.') },

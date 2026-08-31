@@ -189,7 +189,20 @@ function IdSelect({ label, name, form, items, emptyLabel }: { label: string; nam
 }
 
 function ProfileFields({ profile, profiles, attributes, setAttributes }: { profile: AttributeProfile | undefined; profiles: AttributeProfile[]; attributes: Record<string, unknown>; setAttributes: (next: Record<string, unknown>) => void }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const translatedSchema = useMemo(() => {
+    if (!profile) return undefined
+    const labels: Record<string, Record<string, string>> = {
+      es: { institution_type: 'Tipo de institución', institution_url: 'URL de la institución', repository_type: 'Tipo de repositorio', source_type: 'Tipo de fuente', repository_url: 'URL del repositorio', source_url: 'URL de la fuente', oai_url: 'URL OAI', contact_email: 'Correo electrónico', country: 'País', city: 'Ciudad', phone: 'Teléfono', telephone: 'Teléfono', software: 'Software', repository_id: 'Identificador del repositorio', responsible: 'Responsable', lastname_firstname_responsible: 'Apellido y nombre del responsable', responsible_position: 'Cargo del responsable', responsible_charge: 'Cargo del responsable', journal_title: 'Título de la revista', doi: 'DOI', issn: 'ISSN', issn_l: 'ISSN-L', ark_naan: 'NAAN para ARK', stats_source_id: 'ID de la fuente de estadísticas', oai_identifier_prefix: 'Prefijo del identificador OAI', sector: 'Barrio/sector', state: 'Estado (UF)', address: 'Dirección', postal_code: 'Código postal', content_type: 'Tipo de contenido', language: 'Idioma', internalNotes: 'Notas internas' },
+      en: { institution_type: 'Institution type', institution_url: 'Institution URL', repository_type: 'Repository type', source_type: 'Source type', repository_url: 'Repository URL', source_url: 'Source URL', oai_url: 'OAI URL', contact_email: 'Contact email', country: 'Country', city: 'City', phone: 'Phone', telephone: 'Telephone', software: 'Software', repository_id: 'Repository identifier', responsible: 'Responsible', lastname_firstname_responsible: 'Responsible full name', responsible_position: 'Responsible position', responsible_charge: 'Responsible position', journal_title: 'Journal title', doi: 'DOI', issn: 'ISSN', issn_l: 'ISSN-L', ark_naan: 'ARK NAAN', stats_source_id: 'Statistics source ID', oai_identifier_prefix: 'OAI identifier prefix', sector: 'Sector', state: 'State', address: 'Address', postal_code: 'Postal code', content_type: 'Content type', language: 'Language', internalNotes: 'Internal notes' },
+      pt: { institution_type: 'Natureza da instituição', institution_url: 'URL da instituição', repository_type: 'Tipo de repositório', source_type: 'Tipo de fonte', repository_url: 'URL do repositório', source_url: 'URL da fonte', oai_url: 'URL OAI', contact_email: 'E-mail', country: 'País', city: 'Cidade', phone: 'Telefone', telephone: 'Telefone', software: 'Software', repository_id: 'Identificador do repositório', responsible: 'Responsável', lastname_firstname_responsible: 'Nome completo do responsável', responsible_position: 'Cargo do responsável', responsible_charge: 'Cargo do responsável', journal_title: 'Título da revista', doi: 'DOI', issn: 'ISSN', issn_l: 'ISSN-L', ark_naan: 'NAAN para ARK', stats_source_id: 'ID da fonte de estatísticas', oai_identifier_prefix: 'Prefixo OAI', sector: 'Bairro/setor', state: 'Estado (UF)', address: 'Endereço', postal_code: 'Código postal', content_type: 'Tipo de conteúdo', language: 'Idioma', internalNotes: 'Notas internas' }
+    }
+    const language = i18n.language.slice(0, 2) as 'es' | 'en' | 'pt'
+    const map = labels[language] ?? labels.es
+    const schema = { ...profile.schema, properties: { ...(profile.schema.properties as Record<string, Record<string, unknown>> ?? {}) } }
+    Object.entries(schema.properties).forEach(([key, definition]) => { if (map[key]) schema.properties[key] = { ...definition, title: map[key] } })
+    return schema
+  }, [profile, i18n.language])
   const currentClass = typeof attributes['@class'] === 'string' ? attributes['@class'] : ''
   const selectProfile = (className: string) => setAttributes(className
     ? { ...attributes, '@class': className }
@@ -202,7 +215,7 @@ function ProfileFields({ profile, profiles, attributes, setAttributes }: { profi
     {!profile && currentClass && <Alert severity="warning">{t('networks.profileUnavailable')} Los datos se conservarán hasta que selecciones un perfil publicado.</Alert>}
     {!profile && !currentClass && <Alert severity="info">Esta fuente no tiene perfil de datos específicos. Puedes continuar editando sus datos generales o seleccionar uno.</Alert>}
     {profile && <><Typography variant="h6">{profile.name}</Typography><Typography color="text.secondary">Perfil {profile.typeId} · versión {profile.version}</Typography>
-    <Form schema={profile.schema} uiSchema={profile.uiSchema} validator={validator} formData={attributes} onChange={event => setAttributes((event.formData || {}) as Record<string, unknown>)} onSubmit={event => setAttributes((event.formData || {}) as Record<string, unknown>)} showErrorList={false}><span /></Form>
+    <Form schema={translatedSchema!} uiSchema={profile.uiSchema} validator={validator} formData={attributes} onChange={event => setAttributes((event.formData || {}) as Record<string, unknown>)} onSubmit={event => setAttributes((event.formData || {}) as Record<string, unknown>)} showErrorList={false}><span /></Form>
     </>}
   </Stack>
 }

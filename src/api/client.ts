@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -108,6 +108,9 @@ export class ApiClient {
   diagnosticMetadata(snapshotId: number, identifier: string) { return this.requestText(`/snapshots/${snapshotId}/diagnostics/records/metadata?identifier=${encodeURIComponent(identifier)}`) }
   snapshotLogs(snapshotId: number) { return this.request<PageResponse<SnapshotLogEntry>>(`/snapshots/${snapshotId}/logs?page=0&size=100`) }
   runtime() { return this.request<RuntimeSummary>('/runtime/summary') }
+  darkSummary(arkNaan?: string) { return this.request<DarkSummary>(`/dark/summary${arkNaan ? `?arkNaan=${encodeURIComponent(arkNaan)}` : ''}`) }
+  darkRecords(params: URLSearchParams) { return this.request<PageResponse<DarkRecord>>(`/dark/records?${params}`) }
+  darkNetworkSummary(id: number) { return this.request<DarkSummary>(`/dark/networks/${id}/summary`) }
   command(id: number, command: CommandType | CommandRequest): Promise<CommandReceipt> {
     const request = typeof command === 'string' ? { type: command } : command
     return this.request(`/networks/${id}/commands`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
