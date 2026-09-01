@@ -13,6 +13,7 @@ import { ApplicationActionsPage } from '../features/actions/ApplicationActionsPa
 import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage'
 import { AppLayout } from './AppLayout'
 import { LoginPage } from './LoginPage'
+import { UsersPage } from '../features/users/UsersPage'
 
 const simplePage = (title: string, message: string) => <Stack spacing={2}><Typography variant="h4">{title}</Typography><Alert severity="warning">{message}</Alert><Button component={Link} to="/networks">Ir a fuentes</Button></Stack>
 
@@ -32,6 +33,7 @@ export function createRouter(client: ApiClient) {
       { path: 'runtime', element: <RuntimePage client={client} /> },
       { path: 'dark', element: <DarkPage client={client} /> },
       { path: 'actions', element: <ApplicationActionsPage client={client} /> },
+      { path: 'users', element: <RequireRole role="ADMIN"><UsersPage client={client} /></RequireRole> },
       { path: 'forbidden', element: simplePage('Acceso denegado', 'No tienes permisos para esta sección.') },
       { path: '*', element: simplePage('No encontrado', 'La página solicitada no existe.') },
     ] },

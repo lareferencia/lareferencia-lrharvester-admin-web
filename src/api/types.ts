@@ -76,6 +76,7 @@ export type RuntimeProcess = {
 
 export type RuntimeSummary = { engineType: string; runningCount: number; queuedCount: number; processes: RuntimeProcess[] }
 export type CurrentUser = { username: string; displayName: string; roles: string[]; authMode: 'file' | 'oidc' }
+export type ManagedUser = { username: string; roles: string[] }
 export type CommandType = 'RUN_ACTION' | 'RUN_ENABLED_ACTIONS' | 'CANCEL_ALL' | 'RESCHEDULE'
 export type CommandRequest = { type: CommandType; actionName?: string; incremental?: boolean }
 export type CommandReceipt = { requestId: string; networkId: number; command: CommandType; result: 'ACCEPTED' | 'REJECTED'; acceptedAt: string; runtimeUrl: string; message: string | null }
@@ -93,5 +94,6 @@ export type ApplicationActionUsage = { used: boolean; networkCount: number; sche
 export type ApplicationActionRefresh = { engineType: string; bootstrap: boolean; created: number; updated: number; unavailable: number; conflicts: string[] }
 export type WorkerConfiguration = { id: number; engineType: 'legacy' | 'flowable'; workerKey: string; available: boolean; definition: { key?: string; beanName?: string }; configuration: Record<string, unknown>; schema: Record<string, unknown>; lastSeenAt: string | null; updatedAt: string; updatedBy: string | null }
 export type DarkSummary = { total: number; states: Array<{ state: string; count: number }>; naans: Array<{ arkNaan: string; total: number }>; naanStates?: Array<{ arkNaan: string; state: string; count: number }> }
+export type DarkConfiguration = { configuration: Record<string, unknown> }
 export type DarkRecord = { arkNaan: string; oaiId: string; ark: string | null; targetUrl: string | null; state: string; sourceMetadataHash: string | null; stagePayloadHash: string | null; lastError: string | null; createdAt: string; updatedAt: string; lastStagedAt: string | null; lastReconciledAt: string | null; publishedAt: string | null }
 export type NetworkActionConfiguration = { actionKey: string; order?: number | null; globalState: ApplicationActionState; enabled: boolean; scheduleEnabled: boolean; configuration: Record<string, unknown>; effectiveConfiguration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>; problems: string[]; updatedAt: string; updatedBy: string | null }

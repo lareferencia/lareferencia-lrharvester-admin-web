@@ -3,6 +3,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import DownloadIcon from '@mui/icons-material/Download'
+import EditIcon from '@mui/icons-material/Edit'
 import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent } from 'react'
@@ -30,7 +31,7 @@ export function ConfigurationListPage({ client, kind }: { client: ApiClient; kin
   const remove = useMutation({ mutationFn: (id: number) => kind === 'validator' ? client.deleteValidator(id) : client.deleteTransformer(id), onSuccess: () => { invalidate(); setCandidate(null) } })
   const importConfiguration = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return
-    try { const value = JSON.parse(await file.text()) as ConfigurationExport; if (value.format !== 'lareferencia-harvester-configuration') throw new Error('Formato de exportación no reconocido'); if (value.kind !== kind) throw new Error('El tipo de configuración no coincide')
+    try { const value = JSON.parse(await file.text()) as ConfigurationExport & { rules?: unknown[] }; const legacy = !value.format && Array.isArray(value.rules) && value.rules.every(rule => Boolean(rule && typeof rule === 'object' && 'jsonserialization' in rule)); if (!legacy && value.format !== 'lareferencia-harvester-configuration') throw new Error('Formato de exportación no reconocido'); if (!legacy && value.kind !== kind) throw new Error('El tipo de configuración no coincide')
       const saved = kind === 'validator' ? await client.importValidator(value) : await client.importTransformer(value); invalidate(); navigate(`/${kind}s/${saved.id}`)
     } catch (error) { setImportError(error instanceof Error ? error.message : 'No se pudo importar la configuración') }
   }
@@ -42,7 +43,7 @@ export function ConfigurationListPage({ client, kind }: { client: ApiClient; kin
       {canManage && <Stack direction="row" spacing={1}><Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>{t('configuration.import')}<input hidden type="file" accept="application/json,.json" onChange={importConfiguration} /></Button><Button component={Link} to={`/${kind}s/new`} variant="contained" startIcon={<AddIcon />}>{t('configuration.create', { kind: singular.toLowerCase() })}</Button></Stack>}
     </Stack>
     {importError && <Alert severity="error" onClose={() => setImportError(null)}>{importError}</Alert>}{list.isLoading ? <CircularProgress /> : list.isError ? <Alert severity="error">{t('configuration.loadError')}</Alert> : <Paper variant="outlined"><Table><TableHead><TableRow><TableCell>{t('configuration.name')}</TableCell><TableCell>{t('configuration.description')}</TableCell>{canManage && <TableCell align="right">{t('common.actions')}</TableCell>}</TableRow></TableHead><TableBody>
-      {list.data?.items.map(item => <TableRow key={item.id} hover><TableCell>{canManage ? <Link to={`/${kind}s/${item.id}`}>{item.name}</Link> : item.name}</TableCell><TableCell>{item.description || '—'}</TableCell>{canManage && <TableCell align="right"><Button size="small" onClick={() => void exportConfiguration(item.id)} startIcon={<DownloadIcon />}>{t('configuration.export')}</Button><Button size="small" onClick={() => clone.mutate(item.id)} startIcon={<ContentCopyIcon />}>{t('configuration.clone')}</Button><Button size="small" color="error" onClick={() => setCandidate(item)} startIcon={<DeleteIcon />}>{t('common.delete')}</Button></TableCell>}</TableRow>)}
+      {list.data?.items.map(item => <TableRow key={item.id} hover><TableCell><Typography fontWeight={700}>{item.name}</Typography></TableCell><TableCell>{item.description || '—'}</TableCell>{canManage && <TableCell align="right"><Button size="small" component={Link} to={`/${kind}s/${item.id}`} startIcon={<EditIcon />} aria-label="Editar">Editar</Button><Button size="small" onClick={() => void exportConfiguration(item.id)} startIcon={<DownloadIcon />}>{t('configuration.export')}</Button><Button size="small" onClick={() => clone.mutate(item.id)} startIcon={<ContentCopyIcon />}>{t('configuration.clone')}</Button><Button size="small" color="error" onClick={() => setCandidate(item)} startIcon={<DeleteIcon />}>{t('common.delete')}</Button></TableCell>}</TableRow>)}
       {!list.data?.items.length && <TableRow><TableCell colSpan={4}>{t('configuration.noItems')}</TableCell></TableRow>}
     </TableBody></Table></Paper>}
     <DeleteDialog candidate={candidate} usage={usage.data} loading={usage.isLoading} error={usage.error as ApiError | null} pending={remove.isPending} onCancel={() => setCandidate(null)} onDelete={() => candidate && remove.mutate(candidate.id)} />

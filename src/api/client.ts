@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration, ManagedUser } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -37,6 +37,11 @@ export class ApiClient {
   }
 
   me() { return this.request<CurrentUser>('/me') }
+  users() { return this.request<ManagedUser[]>('/users') }
+  createUser(request: { username: string; password: string; roles: string[] }) { return this.request<ManagedUser>('/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  updateUserRoles(username: string, roles: string[]) { return this.request<ManagedUser>(`/users/${encodeURIComponent(username)}/roles`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roles }) }) }
+  updateUserPassword(username: string, password: string) { return this.request<void>(`/users/${encodeURIComponent(username)}/password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }) }
+  deleteUser(username: string) { return this.request<void>(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' }) }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }
   createNetwork(request: NetworkRequest) { return this.request<Network>('/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
@@ -111,6 +116,8 @@ export class ApiClient {
   darkSummary(arkNaan?: string) { return this.request<DarkSummary>(`/dark/summary${arkNaan ? `?arkNaan=${encodeURIComponent(arkNaan)}` : ''}`) }
   darkRecords(params: URLSearchParams) { return this.request<PageResponse<DarkRecord>>(`/dark/records?${params}`) }
   darkNetworkSummary(id: number) { return this.request<DarkSummary>(`/dark/networks/${id}/summary`) }
+  darkConfiguration() { return this.request<DarkConfiguration>('/dark/configuration') }
+  updateDarkConfiguration(configuration: Record<string, unknown>) { return this.request<DarkConfiguration>('/dark/configuration', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configuration }) }) }
   command(id: number, command: CommandType | CommandRequest): Promise<CommandReceipt> {
     const request = typeof command === 'string' ? { type: command } : command
     return this.request(`/networks/${id}/commands`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })

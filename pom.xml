@@ -40,7 +40,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>ci</arguments>
+                            <arguments>ci --no-audit --no-fund</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -60,6 +60,16 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
+                    <execution>
+                        <id>remove-macos-metadata-before-npm</id>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.basedir}/node_modules" includeemptydirs="true" quiet="true"/>
+                            </target>
+                        </configuration>
+                        <goals><goal>run</goal></goals>
+                    </execution>
                     <execution>
                         <id>publish-to-harvester-static</id>
                         <phase>package</phase>
