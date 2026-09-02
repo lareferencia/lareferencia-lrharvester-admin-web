@@ -6,7 +6,7 @@ No usa ni empaqueta la aplicación AngularJS ubicada en `lareferencia-lrharveste
 ## Inicio local
 
 1. Iniciar el harvester con la API v5 habilitada y permitir explícitamente `http://localhost:5173` en `security.api-v5.allowed-origins` si se sirve en otro origen.
-2. Copiar o ajustar `public/config.json`. Para desarrollo con Vite, usar `"apiBaseUrl": "http://localhost:8080/api/v5"`.
+2. Copiar o ajustar `public/config.json`. Para desarrollo con Vite, usar `"apiBaseUrl": "http://localhost:8090/api/v5"`.
 3. Ejecutar `./run-dev.sh`.
 
 El script instala dependencias con `npm ci` cuando aún no existe `node_modules`,
@@ -55,4 +55,4 @@ El cliente del vertical inicial está tipado a partir del contrato v5. Cuando el
 npm run generate:api
 ```
 
-El comando consulta `http://localhost:8080/api/v5/openapi` por defecto; se puede cambiar con `API_OPENAPI_URL`.
+El comando consulta `http://localhost:8090/api/v5/openapi` por defecto; se puede cambiar con `API_OPENAPI_URL`.
