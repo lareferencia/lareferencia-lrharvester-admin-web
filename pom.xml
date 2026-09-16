@@ -6,7 +6,7 @@
 
     <groupId>org.lareferencia</groupId>
     <artifactId>lareferencia-lrharvester-admin-web</artifactId>
-    <version>5.0.0-rc</version>
+    <version>5.0.0-rc2</version>
     <packaging>pom</packaging>
 
     <properties>
