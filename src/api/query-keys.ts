@@ -21,4 +21,5 @@ export const queryKeys = {
   runtime: ['runtime'] as const,
   darkSummary: (naan?: string) => ['dark-summary', naan ?? 'all'] as const,
   darkRecords: (query: string) => ['dark-records', query] as const,
+  darkCommand: (commandId: string) => ['dark-command', commandId] as const,
 }

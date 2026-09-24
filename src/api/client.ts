@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration, ManagedUser } from './types'
+import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration, ManagedUser } from './types'
 
 export type Credentials = { username: string; password: string }
 
@@ -116,6 +116,10 @@ export class ApiClient {
   darkSummary(arkNaan?: string) { return this.request<DarkSummary>(`/dark/summary${arkNaan ? `?arkNaan=${encodeURIComponent(arkNaan)}` : ''}`) }
   darkRecords(params: URLSearchParams) { return this.request<PageResponse<DarkRecord>>(`/dark/records?${params}`) }
   darkNetworkSummary(id: number) { return this.request<DarkSummary>(`/dark/networks/${id}/summary`) }
+  darkPreview(arkNaan: string, oaiIds: string[]) { return this.request<DarkPreviewResponse>(`/dark/naans/${encodeURIComponent(arkNaan)}/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oaiIds }) }) }
+  darkStage(arkNaan: string, oaiIds: string[]) { return this.request<DarkManualCommand>(`/dark/naans/${encodeURIComponent(arkNaan)}/stage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oaiIds }) }) }
+  darkReconcile(arkNaan: string, oaiIds: string[]) { return this.request<DarkManualCommand>(`/dark/naans/${encodeURIComponent(arkNaan)}/reconcile`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oaiIds }) }) }
+  darkCommand(commandId: string) { return this.request<DarkManualCommand>(`/dark/commands/${encodeURIComponent(commandId)}`) }
   darkConfiguration() { return this.request<DarkConfiguration>('/dark/configuration') }
   updateDarkConfiguration(configuration: Record<string, unknown>) { return this.request<DarkConfiguration>('/dark/configuration', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configuration }) }) }
   command(id: number, command: CommandType | CommandRequest): Promise<CommandReceipt> {
