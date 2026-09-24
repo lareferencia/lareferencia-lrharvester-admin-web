@@ -55,4 +55,10 @@ El cliente del vertical inicial está tipado a partir del contrato v5. Cuando el
 npm run generate:api
 ```
 
-El comando consulta `http://localhost:8090/api/v5/openapi` por defecto; se puede cambiar con `API_OPENAPI_URL`.
+El comando consulta `${API_OPENAPI_URL:-http://localhost:8080/api/v5/openapi}` (default del script: puerto `8080`). El harvester normalmente publica la API en `8090`; exporta `API_OPENAPI_URL` si hace falta:
+
+```sh
+API_OPENAPI_URL=http://localhost:8090/api/v5/openapi npm run generate:api
+```
+
+Con el asistente Docker en modo aislado, la Admin Web de desarrollo (Vite con HMR) corre en `5273` (`5173` + offset).
