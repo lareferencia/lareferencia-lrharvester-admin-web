@@ -75,8 +75,12 @@ export type RuntimeProcess = {
 }
 
 export type RuntimeSummary = { engineType: string; runningCount: number; queuedCount: number; processes: RuntimeProcess[] }
-export type CurrentUser = { username: string; displayName: string; roles: string[]; authMode: 'file' | 'oidc' }
-export type ManagedUser = { username: string; roles: string[] }
+export type CurrentUser = { username: string; displayName: string; roles: Array<'ADMIN' | 'READER' | 'DASHBOARD' | 'SERVICE_ACCOUNT'>; readableNetworkIds: number[]; serviceAccount: boolean }
+export type NetworkGrant = { id: number; acronym: string; name: string }
+export type ManagedUser = { id: number; username: string; role: 'ADMIN' | 'READER' | 'DASHBOARD'; enabled: boolean; networks: NetworkGrant[] }
+export type ServiceAccount = { id: number; name: string; enabled: boolean; networks: NetworkGrant[] }
+export type ApiToken = { id: number; prefix: string; createdAt: string; expiresAt: string; lastUsedAt: string | null; revokedAt: string | null }
+export type IssuedApiToken = { token: ApiToken; value: string }
 export type CommandType = 'RUN_ACTION' | 'RUN_ENABLED_ACTIONS' | 'CANCEL_ALL' | 'RESCHEDULE'
 export type CommandRequest = { type: CommandType; actionName?: string; incremental?: boolean }
 export type CommandReceipt = { requestId: string; networkId: number; command: CommandType; result: 'ACCEPTED' | 'REJECTED'; acceptedAt: string; runtimeUrl: string; message: string | null }

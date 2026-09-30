@@ -26,18 +26,18 @@ export function createRouter(client: ApiClient) {
       { path: 'networks/new', element: <RequireRole role="ADMIN"><NetworkCreatePage client={client} /></RequireRole> },
       { path: 'networks/:id/edit', element: <RequireRole role="ADMIN"><NetworkEditPage client={client} /></RequireRole> },
       { path: 'networks/:id/diagnostics', element: <DiagnosticsRoute client={client} /> },
-      { path: 'validators', element: <ConfigurationListPage client={client} kind="validator" /> },
+      { path: 'validators', element: <RequireRole role="ADMIN"><ConfigurationListPage client={client} kind="validator" /></RequireRole> },
       { path: 'validators/:id', element: <RequireRole role="ADMIN"><ConfigurationEditPage client={client} kind="validator" /></RequireRole> },
-      { path: 'transformers', element: <ConfigurationListPage client={client} kind="transformer" /> },
+      { path: 'transformers', element: <RequireRole role="ADMIN"><ConfigurationListPage client={client} kind="transformer" /></RequireRole> },
       { path: 'transformers/:id', element: <RequireRole role="ADMIN"><ConfigurationEditPage client={client} kind="transformer" /></RequireRole> },
-      { path: 'runtime', element: <RuntimePage client={client} /> },
-      { path: 'dark', element: <DarkPage client={client} /> },
-      { path: 'actions', element: <ApplicationActionsPage client={client} /> },
+      { path: 'runtime', element: <RequireRole role="ADMIN"><RuntimePage client={client} /></RequireRole> },
+      { path: 'dark', element: <RequireRole role="ADMIN"><DarkPage client={client} /></RequireRole> },
+      { path: 'actions', element: <RequireRole role="ADMIN"><ApplicationActionsPage client={client} /></RequireRole> },
       { path: 'users', element: <RequireRole role="ADMIN"><UsersPage client={client} /></RequireRole> },
       { path: 'forbidden', element: simplePage('Acceso denegado', 'No tienes permisos para esta sección.') },
       { path: '*', element: simplePage('No encontrado', 'La página solicitada no existe.') },
     ] },
-  ])
+  ], { basename: '/admin' })
 }
 
 function DiagnosticsRoute({ client }: { client: ApiClient }) {

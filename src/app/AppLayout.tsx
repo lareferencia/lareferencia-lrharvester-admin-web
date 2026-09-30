@@ -21,9 +21,10 @@ export function AppLayout() {
   const { user, logout } = useAuth()
   const { t, i18n } = useTranslation()
   const location = useLocation()
-  const navigation = [
-    { label: t('nav.networks'), to: '/networks', icon: <DashboardOutlinedIcon /> }, { label: t('nav.validators'), to: '/validators', icon: <FactCheckOutlinedIcon /> }, { label: t('nav.transformers'), to: '/transformers', icon: <TransformOutlinedIcon /> }, { label: t('nav.actions'), to: '/actions', icon: <BoltOutlinedIcon /> }, { label: t('nav.dark'), to: '/dark', icon: <FingerprintOutlinedIcon /> }, { label: t('nav.runtime'), to: '/runtime', icon: <MemoryOutlinedIcon /> }, { label: t('nav.users'), to: '/users', icon: <PeopleOutlineIcon /> },
+  const adminNavigation = [
+    { label: t('nav.validators'), to: '/validators', icon: <FactCheckOutlinedIcon /> }, { label: t('nav.transformers'), to: '/transformers', icon: <TransformOutlinedIcon /> }, { label: t('nav.actions'), to: '/actions', icon: <BoltOutlinedIcon /> }, { label: t('nav.dark'), to: '/dark', icon: <FingerprintOutlinedIcon /> }, { label: t('nav.runtime'), to: '/runtime', icon: <MemoryOutlinedIcon /> }, { label: t('nav.users'), to: '/users', icon: <PeopleOutlineIcon /> },
   ]
+  const navigation = [{ label: t('nav.networks'), to: '/networks', icon: <DashboardOutlinedIcon /> }, ...(user?.roles.includes('ADMIN') ? adminNavigation : [])]
   const [expanded, setExpanded] = useState(false)
   const currentWidth = expanded ? drawerWidth : collapsedDrawerWidth
   return <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: 'background.default' }}>
@@ -39,7 +40,7 @@ export function AppLayout() {
             {languages.map(language => (<MenuItem key={language.code} value={language.code}>{expanded ? language.label : language.code.toUpperCase()}</MenuItem>))}
           </Select>
         </Stack>
-        <Tooltip title={expanded ? '' : t('nav.logout')} placement="right"><Button color="inherit" fullWidth sx={{ justifyContent: expanded ? 'flex-start' : 'center', minWidth: 0, px: expanded ? 2 : 0, mt: 1.5, color: 'rgba(255,255,255,.72)' }} onClick={logout} startIcon={<LogoutIcon sx={{ mr: expanded ? 0 : '-4px' }} />}>{expanded && t('nav.logout')}</Button></Tooltip>
+        <Tooltip title={expanded ? '' : t('nav.logout')} placement="right"><Button color="inherit" fullWidth sx={{ justifyContent: expanded ? 'flex-start' : 'center', minWidth: 0, px: expanded ? 2 : 0, mt: 1.5, color: 'rgba(255,255,255,.72)' }} onClick={() => { void logout() }} startIcon={<LogoutIcon sx={{ mr: expanded ? 0 : '-4px' }} />}>{expanded && t('nav.logout')}</Button></Tooltip>
       </Box>
     </Drawer>
     <Box component="main" sx={{ flexGrow: 1, minWidth: 0 }}><Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2.5, md: 4 } }}><Outlet /></Container></Box>
