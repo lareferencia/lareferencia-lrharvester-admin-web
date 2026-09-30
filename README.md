@@ -1,7 +1,8 @@
 # LA Referencia Harvester Admin Web
 
-SPA independiente para operar el cosechador exclusivamente mediante `/api/v5`.
-No usa ni empaqueta la aplicación AngularJS ubicada en `lareferencia-lrharvester-app/static`.
+SPA para operar el cosechador exclusivamente mediante `/api/v5`. Es la única
+interfaz web de Harvester y se compila al directorio
+`lareferencia-lrharvester-app/static/`.
 
 ## Inicio local
 
@@ -17,12 +18,18 @@ en `http://localhost:8090`. Se puede indicar otro origen como primer argumento:
 ./run-dev.sh http://localhost:8090
 ```
 
-La autenticación `file` usa HTTP Basic. Las credenciales permanecen solamente en memoria del navegador y se descartan al recargar o cerrar la pestaña. Para producción se recomienda configurar OIDC y completar su adaptador en `src/auth`.
+La interfaz usa sesiones locales del servidor mediante una cookie segura y protección CSRF. Los usuarios se administran desde la sección de usuarios; las integraciones utilizan tokens revocables de cuentas técnicas y no pueden iniciar sesión en esta interfaz.
+El primer usuario administrador debe crearse en la base de datos de Harvester con
+`security-create-admin <username>` desde el shell interactivo, después de aplicar
+`database_migrate`. No hay cuentas por defecto ni migración de Keycloak. Roles,
+alcance por red, cookies y tokens están descritos en
+[`docs/AUTHENTICATION.md`](../docs/AUTHENTICATION.md).
 
 ## Compilación para el harvester
 
 El frontend de producción se genera directamente en el directorio externo
-`static` del harvester, sin copiar recursos a `target`:
+`static` del harvester, sin copiar recursos a `target`. Ese directorio contiene
+la SPA React; no existe `static-legacy` ni una ruta `/legacy/`:
 
 ```bash
 ./build.sh
@@ -31,8 +38,7 @@ El frontend de producción se genera directamente en el directorio externo
 El script delega en Maven: instala una versión fijada de Node, ejecuta `npm ci`,
 compila la aplicación y sincroniza `dist/` con
 `../lareferencia-lrharvester-app/static/`. El harvester sirve ese directorio en
-la raíz de `8090`; nunca se sirve contenido desde `target`. La interfaz
-anterior permanece en `static-legacy` y puede abrirse mediante `/legacy/`.
+la raíz de `8090`; nunca se sirve contenido desde `target`.
 
 También puede usarse Maven directamente, por ejemplo en CI:
 

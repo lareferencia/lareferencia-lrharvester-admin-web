@@ -1,5 +1,4 @@
 {
   "apiBaseUrl": "/api/v5",
-  "authMode": "file",
   "defaultLocale": "es"
 }

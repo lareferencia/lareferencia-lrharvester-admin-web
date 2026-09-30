@@ -1,47 +1,78 @@
 import { asApiError } from './problem-detail'
-import type { ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration, ManagedUser } from './types'
-
-export type Credentials = { username: string; password: string }
+import type { ApiToken, ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, IssuedApiToken, ManagedUser, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, ServiceAccount, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export class ApiClient {
-  private credentials: Credentials | null = null
+  private csrfToken: string | null = null
+  private bearerToken: string | null = null
 
   constructor(private readonly baseUrl: string) {}
 
-  setCredentials(credentials: Credentials | null) { this.credentials = credentials }
-  hasCredentials() { return this.credentials !== null }
+  setBearerToken(token: string | null) { this.bearerToken = token }
+
+  private async csrf(): Promise<string> {
+    if (this.csrfToken) return this.csrfToken
+    const response = await fetch(`${this.baseUrl}/auth/csrf`, { credentials: 'include', cache: 'no-store' })
+    if (!response.ok) throw await asApiError(response)
+    const result = await response.json() as { token: string }
+    this.csrfToken = result.token
+    return this.csrfToken
+  }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers)
     headers.set('Accept', 'application/json')
-    if (this.credentials) headers.set('Authorization', `Basic ${btoa(`${this.credentials.username}:${this.credentials.password}`)}`)
-    const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers })
+    const bearer = this.bearerToken
+    if (bearer) headers.set('Authorization', `Bearer ${bearer}`)
+    const method = (init.method || 'GET').toUpperCase()
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      const token = await this.csrf()
+      if (!headers.has('X-XSRF-TOKEN')) headers.set('X-XSRF-TOKEN', token)
+    }
+    const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers, credentials: 'include' })
     if (!response.ok) throw await asApiError(response)
     return response.status === 204 ? undefined as T : response.json() as Promise<T>
   }
 
   private async requestText(path: string): Promise<string> {
     const headers = new Headers({ Accept: 'application/xml' })
-    if (this.credentials) headers.set('Authorization', `Basic ${btoa(`${this.credentials.username}:${this.credentials.password}`)}`)
-    const response = await fetch(`${this.baseUrl}${path}`, { headers })
+    if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`)
+    else headers.set('X-XSRF-TOKEN', await this.csrf())
+    const response = await fetch(`${this.baseUrl}${path}`, { headers, credentials: 'include' })
     if (!response.ok) throw await asApiError(response)
     return response.text()
   }
 
   private async requestBlob(path: string): Promise<Blob> {
     const headers = new Headers()
-    if (this.credentials) headers.set('Authorization', `Basic ${btoa(`${this.credentials.username}:${this.credentials.password}`)}`)
-    const response = await fetch(`${this.baseUrl}${path}`, { headers })
+    if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`)
+    else headers.set('X-XSRF-TOKEN', await this.csrf())
+    const response = await fetch(`${this.baseUrl}${path}`, { headers, credentials: 'include' })
     if (!response.ok) throw await asApiError(response)
     return response.blob()
   }
 
   me() { return this.request<CurrentUser>('/me') }
+  async login(username: string, password: string) {
+    this.bearerToken = null
+    this.csrfToken = null
+    const csrf = await this.csrf()
+    return this.request<CurrentUser>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': csrf }, body: JSON.stringify({ username, password }) })
+  }
+  async logout() {
+    try { await this.request<void>('/auth/logout', { method: 'POST' }) }
+    finally { this.csrfToken = null }
+  }
   users() { return this.request<ManagedUser[]>('/users') }
-  createUser(request: { username: string; password: string; roles: string[] }) { return this.request<ManagedUser>('/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
-  updateUserRoles(username: string, roles: string[]) { return this.request<ManagedUser>(`/users/${encodeURIComponent(username)}/roles`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roles }) }) }
-  updateUserPassword(username: string, password: string) { return this.request<void>(`/users/${encodeURIComponent(username)}/password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }) }
+  createUser(request: { username: string; password: string; role: 'ADMIN' | 'READER' | 'DASHBOARD'; networkIds: number[] }) { return this.request<ManagedUser>('/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  updateUser(username: string, request: { role?: 'ADMIN' | 'READER' | 'DASHBOARD'; enabled?: boolean; password?: string; networkIds?: number[] }) { return this.request<ManagedUser>(`/users/${encodeURIComponent(username)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   deleteUser(username: string) { return this.request<void>(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' }) }
+  serviceAccounts() { return this.request<ServiceAccount[]>('/service-accounts') }
+  createServiceAccount(name: string, networkIds: number[]) { return this.request<ServiceAccount>('/service-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, networkIds }) }) }
+  updateServiceAccount(id: number, request: { enabled?: boolean; networkIds?: number[] }) { return this.request<ServiceAccount>(`/service-accounts/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
+  deleteServiceAccount(id: number) { return this.request<void>(`/service-accounts/${id}`, { method: 'DELETE' }) }
+  tokens(id: number) { return this.request<ApiToken[]>(`/service-accounts/${id}/tokens`) }
+  issueToken(id: number, expiresAt: string) { return this.request<IssuedApiToken>(`/service-accounts/${id}/tokens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresAt }) }) }
+  revokeToken(id: number, tokenId: number) { return this.request<void>(`/service-accounts/${id}/tokens/${tokenId}`, { method: 'DELETE' }) }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }
   createNetwork(request: NetworkRequest) { return this.request<Network>('/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
