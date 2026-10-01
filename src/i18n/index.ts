@@ -56,6 +56,16 @@ for (const language of ['es', 'en', 'pt'] as const) {
   Object.assign(resources[language].translation.networks, batchNetworkTranslations[language])
 }
 
+const repositoryAccessTranslations = {
+  es: { repositories: 'Repositorios', repositorySearch: 'Buscar por acrónimo o nombre', assignedOnly: 'Solo asignados', selectedRepositories: '{{count}} repositorios asignados', retryRepositories: 'Reintentar', repositoriesLoadError: 'No se pudo cargar la lista de repositorios.', noRepositoriesMatch: 'No hay repositorios para este filtro.', repositorySelectionHelp: 'Marca para añadir acceso y desmarca para quitarlo. Los cambios se aplican al guardar.' },
+  en: { repositories: 'Repositories', repositorySearch: 'Search by acronym or name', assignedOnly: 'Assigned only', selectedRepositories: '{{count}} assigned repositories', retryRepositories: 'Retry', repositoriesLoadError: 'Could not load repositories.', noRepositoriesMatch: 'No repositories match this filter.', repositorySelectionHelp: 'Check to grant access and uncheck to remove it. Changes take effect when you save.' },
+  pt: { repositories: 'Repositórios', repositorySearch: 'Buscar por sigla ou nome', assignedOnly: 'Somente atribuídos', selectedRepositories: '{{count}} repositórios atribuídos', retryRepositories: 'Tentar novamente', repositoriesLoadError: 'Não foi possível carregar os repositórios.', noRepositoriesMatch: 'Nenhum repositório corresponde ao filtro.', repositorySelectionHelp: 'Marque para conceder acesso e desmarque para removê-lo. As alterações são aplicadas ao salvar.' },
+} as const
+
+for (const language of ['es', 'en', 'pt'] as const) {
+  Object.assign(resources[language].translation.users, repositoryAccessTranslations[language])
+}
+
 const saved = localStorage.getItem('lrharvester.locale')
 void i18n.use(initReactI18next).init({ resources, lng: saved || navigator.language.split('-')[0], fallbackLng: 'es', interpolation: { escapeValue: false } })
 i18n.on('languageChanged', language => localStorage.setItem('lrharvester.locale', language))

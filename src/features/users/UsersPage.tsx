@@ -2,17 +2,31 @@ import { useState } from 'react'
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ApiClient } from '../../api/client'
-import type { ManagedUser, ServiceAccount } from '../../api/types'
+import type { ManagedUser, NetworkGrant, ServiceAccount } from '../../api/types'
 import { useTranslation } from 'react-i18next'
+import { RepositoryAccessPicker } from './RepositoryAccessPicker'
 
 export function UsersPage({ client }: { client: ApiClient }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const users = useQuery({ queryKey: ['users'], queryFn: () => client.users() })
   const accounts = useQuery({ queryKey: ['service-accounts'], queryFn: () => client.serviceAccounts() })
-  const networkQuery = useQuery({ queryKey: ['network-summaries', 'access-list'], queryFn: () => client.networkSummaries(new URLSearchParams({ page: '0', size: '200', sort: 'acronym,asc' })) })
-  const availableNetworks = networkQuery.data?.items ?? []
-  const networks = new Map(availableNetworks.map(item => [item.id, item.acronym]))
+  const networkQuery = useQuery({
+    queryKey: ['network-summaries', 'access-list'],
+    queryFn: async () => {
+      const repositories: NetworkGrant[] = []
+      let page = 0
+      let totalPages = 1
+      do {
+        const result = await client.networkSummaries(new URLSearchParams({ page: String(page), size: '200', sort: 'acronym,asc' }))
+        repositories.push(...result.items)
+        totalPages = result.totalPages
+        page += 1
+      } while (page < totalPages)
+      return repositories
+    },
+  })
+  const availableNetworks = networkQuery.data ?? []
   const [dialog, setDialog] = useState<'user' | 'service' | null>(null)
   const [editing, setEditing] = useState<ManagedUser | null>(null)
   const [editingService, setEditingService] = useState<ServiceAccount | null>(null)
@@ -52,12 +66,17 @@ export function UsersPage({ client }: { client: ApiClient }) {
     mutationFn: ({ accountId, tokenId }: { accountId: number; tokenId: number }) => client.revokeToken(accountId, tokenId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['tokens', tokenAccountId] }), onError: showError,
   })
-  const chooseNetworks = (value: number[]) => setNetworkIds(value)
-  const networkPicker = <FormControl fullWidth><InputLabel id="access-networks-label">{label('users.repositories', 'Repositorios')}</InputLabel>
-    <Select labelId="access-networks-label" multiple value={networkIds} label={label('users.repositories', 'Repositorios')} onChange={event => chooseNetworks(typeof event.target.value === 'string' ? event.target.value.split(',').map(Number) : event.target.value as number[])}
-      renderValue={ids => (ids as number[]).map(id => networks.get(id) ?? String(id)).join(', ')}>
-      {availableNetworks.map(network => <MenuItem key={network.id} value={network.id}>{network.acronym} — {network.name}</MenuItem>)}
-    </Select></FormControl>
+  const networkPicker = <RepositoryAccessPicker
+    key={`${dialog}-${editing?.id ?? editingService?.id ?? 'new'}`}
+    repositories={availableNetworks}
+    assignedRepositories={dialog === 'user' ? editing?.networks ?? [] : editingService?.networks ?? []}
+    selectedIds={networkIds}
+    onChange={setNetworkIds}
+    loading={networkQuery.isPending}
+    loadError={networkQuery.isError}
+    onRetry={() => void networkQuery.refetch()}
+    disabled={userMutation.isPending || serviceMutation.isPending}
+  />
   const edit = (user: ManagedUser) => { setEditing(user); setRole(user.role); setEnabled(user.enabled); setNetworkIds(user.networks.map(n => n.id)); setPassword(''); setError(''); setDialog('user') }
   const newUser = () => { setEditing(null); setUsername(''); setPassword(''); setRole('DASHBOARD'); setNetworkIds([]); setEnabled(true); setError(''); setDialog('user') }
 
@@ -95,12 +114,12 @@ export function UsersPage({ client }: { client: ApiClient }) {
         <TextField required={!editing} inputProps={{ minLength: 12, maxLength: 200 }} helperText={label('users.passwordRule', 'Mínimo 12 caracteres. En edición, déjalo vacío para conservar la contraseña.')} label={editing ? label('users.newPassword', 'Nueva contraseña') : label('users.password', 'Contraseña')} type="password" value={password} onChange={event => setPassword(event.target.value)} />
         {editing && <FormControl fullWidth><InputLabel id="user-enabled-label">{label('users.status', 'Estado')}</InputLabel><Select labelId="user-enabled-label" value={enabled ? 'true' : 'false'} label={label('users.status', 'Estado')} onChange={event => setEnabled(event.target.value === 'true')}><MenuItem value="true">{label('users.enabled', 'Activo')}</MenuItem><MenuItem value="false">{label('users.disabled', 'Desactivado')}</MenuItem></Select></FormControl>}
       </Stack></DialogContent><DialogActions><Button onClick={() => setDialog(null)}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={() => userMutation.mutate()} disabled={(role !== 'ADMIN' && networkIds.length === 0) || (!editing && (!username.trim() || password.length < 12)) || (!!editing && !!password && password.length < 12) || userMutation.isPending}>{t('common.save')}</Button></DialogActions>
+        <Button variant="contained" onClick={() => userMutation.mutate()} disabled={(role !== 'ADMIN' && (networkQuery.isPending || networkQuery.isError)) || (!editing && (!username.trim() || password.length < 12)) || (!!editing && !!password && password.length < 12) || userMutation.isPending}>{t('common.save')}</Button></DialogActions>
     </Dialog>
 
     <Dialog open={dialog === 'service'} onClose={() => setDialog(null)} fullWidth maxWidth="sm"><DialogTitle>{editingService ? label('users.edit', 'Editar cuenta técnica') : label('users.newService', 'Crear cuenta técnica')}</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
       {!editingService && <TextField label={label('users.account', 'Nombre')} value={serviceName} onChange={event => setServiceName(event.target.value)} />}{networkPicker}
       {editingService && <FormControl fullWidth><InputLabel id="service-enabled-label">{label('users.status', 'Estado')}</InputLabel><Select labelId="service-enabled-label" value={serviceEnabled ? 'true' : 'false'} label={label('users.status', 'Estado')} onChange={event => setServiceEnabled(event.target.value === 'true')}><MenuItem value="true">{label('users.enabled', 'Activa')}</MenuItem><MenuItem value="false">{label('users.disabled', 'Desactivada')}</MenuItem></Select></FormControl>}
-    </Stack></DialogContent><DialogActions><Button onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button variant="contained" onClick={() => serviceMutation.mutate()} disabled={(!editingService && !serviceName.trim()) || !networkIds.length || serviceMutation.isPending}>{t('common.save')}</Button></DialogActions></Dialog>
+    </Stack></DialogContent><DialogActions><Button onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button variant="contained" onClick={() => serviceMutation.mutate()} disabled={(!editingService && !serviceName.trim()) || !networkIds.length || networkQuery.isPending || networkQuery.isError || serviceMutation.isPending}>{t('common.save')}</Button></DialogActions></Dialog>
   </Stack>
 }
