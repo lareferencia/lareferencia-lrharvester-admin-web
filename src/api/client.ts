@@ -1,5 +1,5 @@
 import { asApiError } from './problem-detail'
-import type { ApiToken, ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, IssuedApiToken, ManagedUser, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, ServiceAccount, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
+import type { ApiToken, ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, IssuedApiToken, ManagedUser, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, TaskExecution, TaskManagerConfiguration, TaskManagerSettings, ServiceAccount, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
 export class ApiClient {
   private csrfToken: string | null = null
@@ -143,6 +143,11 @@ export class ApiClient {
   diagnosticOccurrences(snapshotId: number, ruleId: number, filters: DiagnosticQuery['filters']) { return this.request<RuleOccurrences>(`/snapshots/${snapshotId}/diagnostics/rules/${ruleId}/occurrences/query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters }) }) }
   diagnosticMetadata(snapshotId: number, identifier: string) { return this.requestText(`/snapshots/${snapshotId}/diagnostics/records/metadata?identifier=${encodeURIComponent(identifier)}`) }
   snapshotLogs(snapshotId: number) { return this.request<PageResponse<SnapshotLogEntry>>(`/snapshots/${snapshotId}/logs?page=0&size=100`) }
+  runtimeExecutions() { return this.request<TaskExecution[]>('/runtime/executions') }
+  runtimeConfiguration() { return this.request<TaskManagerConfiguration>('/runtime/configuration') }
+  updateRuntimeConfiguration(configuration: TaskManagerSettings) {
+    return this.request<TaskManagerConfiguration>('/runtime/configuration', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configuration) })
+  }
   runtime() { return this.request<RuntimeSummary>('/runtime/summary') }
   darkSummary(arkNaan?: string) { return this.request<DarkSummary>(`/dark/summary${arkNaan ? `?arkNaan=${encodeURIComponent(arkNaan)}` : ''}`) }
   darkRecords(params: URLSearchParams) { return this.request<PageResponse<DarkRecord>>(`/dark/records?${params}`) }

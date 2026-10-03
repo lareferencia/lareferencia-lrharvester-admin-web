@@ -1,5 +1,6 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import { queueTranslations } from '../features/runtime/queue-translations'
 
 export const languages = [
   { code: 'es', label: 'Español' },
@@ -64,6 +65,15 @@ const repositoryAccessTranslations = {
 
 for (const language of ['es', 'en', 'pt'] as const) {
   Object.assign(resources[language].translation.users, repositoryAccessTranslations[language])
+}
+
+const runtimeConfigurationTranslations = {
+  es: { title: 'Configuración de procesos', help: 'Los cambios se aplican al guardar y se conservan al reiniciar. Si reduces los límites, los workers activos terminan y las tareas ya admitidas permanecen en cola.', properties: 'Valores iniciales de la instalación. Todavía no hay una configuración guardada desde Admin.', persisted: 'Configuración guardada: tiene prioridad sobre los archivos de propiedades.', loadError: 'No se pudo cargar la configuración de procesos.', saveError: 'No se pudo aplicar la configuración.', retry: 'Reintentar', apply: 'Guardar y aplicar', saved: 'Configuración guardada y aplicada.', invalid: 'Introduce números enteros válidos. Concurrencia, retención y cantidad de resultados deben ser mayores que cero; cola y espera de apagado pueden ser cero.', updated: 'Último cambio: {{user}} · {{date}}', fields: { concurrentTasks: 'Workers simultáneos', maxQueuedTasks: 'Workers máximos en cola', resultRetentionSeconds: 'Retención de resultados (segundos)', maxRetainedResults: 'Resultados máximos retenidos', shutdownTimeoutSeconds: 'Espera de apagado (segundos)' } },
+  en: { title: 'Process configuration', help: 'Changes apply when saved and survive restarts. Lower limits allow active workers to finish and keep already admitted tasks in the queue.', properties: 'Initial installation values. No configuration has been saved from Admin yet.', persisted: 'Saved configuration takes precedence over property files.', loadError: 'Could not load process configuration.', saveError: 'Could not apply configuration.', retry: 'Retry', apply: 'Save and apply', saved: 'Configuration saved and applied.', invalid: 'Enter valid whole numbers. Concurrency, retention and result count must be positive; queue capacity and shutdown wait may be zero.', updated: 'Last change: {{user}} · {{date}}', fields: { concurrentTasks: 'Concurrent workers', maxQueuedTasks: 'Maximum queued workers', resultRetentionSeconds: 'Result retention (seconds)', maxRetainedResults: 'Maximum retained results', shutdownTimeoutSeconds: 'Shutdown wait (seconds)' } },
+  pt: { title: 'Configuração de processos', help: 'As alterações são aplicadas ao salvar e mantidas após reiniciar. Limites menores permitem que os workers ativos terminem e preservam as tarefas já admitidas na fila.', properties: 'Valores iniciais da instalação. Ainda não há configuração salva pelo Admin.', persisted: 'A configuração salva tem prioridade sobre os arquivos de propriedades.', loadError: 'Não foi possível carregar a configuração de processos.', saveError: 'Não foi possível aplicar a configuração.', retry: 'Tentar novamente', apply: 'Salvar e aplicar', saved: 'Configuração salva e aplicada.', invalid: 'Informe números inteiros válidos. Concorrência, retenção e quantidade de resultados devem ser positivos; fila e espera de desligamento podem ser zero.', updated: 'Última alteração: {{user}} · {{date}}', fields: { concurrentTasks: 'Workers simultâneos', maxQueuedTasks: 'Máximo de workers na fila', resultRetentionSeconds: 'Retenção de resultados (segundos)', maxRetainedResults: 'Máximo de resultados retidos', shutdownTimeoutSeconds: 'Espera de desligamento (segundos)' } },
+} as const
+for (const language of ['es', 'en', 'pt'] as const) {
+  Object.assign(resources[language].translation.runtime, { configuration: runtimeConfigurationTranslations[language], queues: queueTranslations[language] })
 }
 
 const saved = localStorage.getItem('lrharvester.locale')

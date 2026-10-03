@@ -74,6 +74,21 @@ export type RuntimeProcess = {
   incremental: boolean | null; engineType: string; cancellationScope: 'NETWORK' | 'PROCESS'; variables: Record<string, unknown>
 }
 
+export type TaskExecutionState = 'QUEUED' | 'DISPATCHED' | 'RUNNING' | 'CANCEL_REQUESTED' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
+export type TaskExecution = {
+  executionId: string; groupId: string; contextId: string; serialLaneId: number | null
+  workerName: string; networkId: number | null; networkAcronym: string | null; state: TaskExecutionState
+  waitingReason: string | null; admittedAt: string; startedAt: string | null; finishedAt: string | null; failure: string | null
+}
+
+export type TaskManagerSettings = {
+  concurrentTasks: number; maxQueuedTasks: number; resultRetentionSeconds: number
+  maxRetainedResults: number; shutdownTimeoutSeconds: number
+}
+export type TaskManagerConfiguration = {
+  configuration: TaskManagerSettings; persisted: boolean; updatedAt: string | null; updatedBy: string | null
+}
+
 export type RuntimeSummary = { engineType: string; runningCount: number; queuedCount: number; processes: RuntimeProcess[] }
 export type CurrentUser = { username: string; displayName: string; roles: Array<'ADMIN' | 'READER' | 'DASHBOARD' | 'SERVICE_ACCOUNT'>; readableNetworkIds: number[]; serviceAccount: boolean }
 export type NetworkGrant = { id: number; acronym: string; name: string }
