@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+import { uiText } from '../i18n'
 import { Alert, Button, Stack, Typography } from '@mui/material'
 import { createBrowserRouter, Link, useParams } from 'react-router-dom'
 import type { ApiClient } from '../api/client'
@@ -15,7 +17,10 @@ import { AppLayout } from './AppLayout'
 import { LoginPage } from './LoginPage'
 import { UsersPage } from '../features/users/UsersPage'
 
-const simplePage = (title: string, message: string) => <Stack spacing={2}><Typography variant="h4">{title}</Typography><Alert severity="warning">{message}</Alert><Button component={Link} to="/networks">Ir a fuentes</Button></Stack>
+function SimplePage({ title, message }: { title: Parameters<typeof uiText>[0]; message: Parameters<typeof uiText>[0] }) {
+  useTranslation()
+  return <Stack spacing={2}><Typography variant="h4">{uiText(title)}</Typography><Alert severity="warning">{uiText(message)}</Alert><Button component={Link} to="/networks">{uiText('goSources')}</Button></Stack>
+}
 
 export function createRouter(client: ApiClient) {
   return createBrowserRouter([
@@ -34,8 +39,8 @@ export function createRouter(client: ApiClient) {
       { path: 'dark', element: <RequireRole role="ADMIN"><DarkPage client={client} /></RequireRole> },
       { path: 'actions', element: <RequireRole role="ADMIN"><ApplicationActionsPage client={client} /></RequireRole> },
       { path: 'users', element: <RequireRole role="ADMIN"><UsersPage client={client} /></RequireRole> },
-      { path: 'forbidden', element: simplePage('Acceso denegado', 'No tienes permisos para esta sección.') },
-      { path: '*', element: simplePage('No encontrado', 'La página solicitada no existe.') },
+      { path: 'forbidden', element: <SimplePage title="forbidden" message="forbiddenHelp" /> },
+      { path: '*', element: <SimplePage title="notFound" message="notFoundHelp" /> },
     ] },
   ], { basename: '/admin' })
 }
@@ -43,5 +48,5 @@ export function createRouter(client: ApiClient) {
 function DiagnosticsRoute({ client }: { client: ApiClient }) {
   const { id: rawId } = useParams()
   const id = Number(rawId)
-  return Number.isSafeInteger(id) && id > 0 ? <DiagnosticsPage client={client} networkId={id} /> : simplePage('Fuente no encontrada', 'El identificador de fuente no es válido.')
+  return Number.isSafeInteger(id) && id > 0 ? <DiagnosticsPage client={client} networkId={id} /> : <SimplePage title="sourceNotFound" message="invalidSourceId" />
 }

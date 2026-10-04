@@ -47,7 +47,7 @@ export function NetworkBatchCommandDialog({ open, client, networks, actions, onC
         <Typography>{t('networks.batchDescription', { count: networks.length })}</Typography>
         <TextField select label={t('common.action')} value={actionName} onChange={event => { setActionName(event.target.value); setIncremental(false) }} fullWidth>
           <MenuItem value="">{t('networks.batchChooseAction')}</MenuItem>
-          {orderedActions.map(action => <MenuItem key={action.name} value={action.name}>{action.description || action.name}</MenuItem>)}
+          {orderedActions.map(action => <MenuItem key={action.name} value={action.name}>{t(`networks.actionNames.${action.name}`, { defaultValue: action.description || action.name })}</MenuItem>)}
         </TextField>
         {selectedAction?.incremental && <FormControlLabel control={<Checkbox checked={incremental} onChange={event => setIncremental(event.target.checked)} />} label={t('networks.batchIncremental')} />}
         <Box sx={{ maxHeight: 180, overflowY: 'auto', border: 1, borderColor: 'divider', borderRadius: 1.5, px: 1.5 }}><List dense>{networks.map(network => <ListItem key={network.id} disableGutters><ListItemText primary={network.acronym} secondary={network.name} /></ListItem>)}</List></Box>

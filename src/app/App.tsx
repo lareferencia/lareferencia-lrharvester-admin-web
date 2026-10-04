@@ -1,3 +1,6 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { enUS, esES, ptBR } from '@mui/material/locale'
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
@@ -37,5 +40,8 @@ const theme = createTheme({
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: (count, error) => error instanceof ApiError && error.status === 401 ? false : count < 2 } } })
 
 export function App({ client }: { client: ApiClient }) {
-  return <ThemeProvider theme={theme}><CssBaseline /><QueryClientProvider client={queryClient}><AuthProvider client={client}><RouterProvider router={createRouter(client)} /></AuthProvider></QueryClientProvider></ThemeProvider>
+  const { i18n } = useTranslation()
+  const localizedTheme = useMemo(() => createTheme(theme, ({ es: esES, en: enUS, pt: ptBR } as const)[(i18n.resolvedLanguage || 'es') as 'es' | 'en' | 'pt']), [i18n.resolvedLanguage])
+  const router = useMemo(() => createRouter(client), [client])
+  return <ThemeProvider theme={localizedTheme}><CssBaseline /><QueryClientProvider client={queryClient}><AuthProvider client={client}><RouterProvider router={router} /></AuthProvider></QueryClientProvider></ThemeProvider>
 }
