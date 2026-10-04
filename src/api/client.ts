@@ -1,6 +1,8 @@
 import { asApiError } from './problem-detail'
 import type { ApiToken, ApplicationAction, ApplicationActionRefresh, ApplicationActionUsage, AttributeProfile, BatchCommandReceipt, Capabilities, CommandReceipt, CommandRequest, CommandType, ConfigurationExport, CurrentUser, DiagnosticQuery, DiagnosticRecord, DiagnosticSummary, DarkRecord, DarkSummary, DarkConfiguration, DarkManualCommand, DarkPreviewResponse, IssuedApiToken, ManagedUser, MetadataCleanupPreview, NamedConfiguration, Network, NetworkActionConfiguration, NetworkImportMode, NetworkImportResult, NetworkImportValidation, NetworkRequest, NetworkSummary, PageResponse, Rule, RuleOccurrences, RuleType, RuntimeSummary, TaskExecution, TaskManagerConfiguration, TaskManagerSettings, ServiceAccount, Snapshot, SnapshotLogEntry, TransformerConfiguration, Usage, ValidatorConfiguration, WorkerConfiguration } from './types'
 
+export class SecureCookieHttpError extends Error {}
+
 export class ApiClient {
   private csrfToken: string | null = null
   private bearerToken: string | null = null
@@ -56,7 +58,19 @@ export class ApiClient {
     this.bearerToken = null
     this.csrfToken = null
     const csrf = await this.csrf()
+    if (this.isSameOriginHttp() && !this.hasCsrfCookie(csrf)) throw new SecureCookieHttpError()
     return this.request<CurrentUser>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': csrf }, body: JSON.stringify({ username, password }) })
+  }
+  private isSameOriginHttp() {
+    return typeof window !== 'undefined' && window.location.protocol === 'http:'
+      && new URL(this.baseUrl, window.location.href).origin === window.location.origin
+  }
+  private hasCsrfCookie(token: string) {
+    return document.cookie.split(';').some(value => {
+      const separator = value.indexOf('=')
+      return separator >= 0 && value.slice(0, separator).trim() === 'XSRF-TOKEN'
+        && decodeURIComponent(value.slice(separator + 1)) === token
+    })
   }
   async logout() {
     try { await this.request<void>('/auth/logout', { method: 'POST' }) }
