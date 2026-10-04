@@ -134,7 +134,7 @@ function CommandConfirmation({ open, acronym, pending, onClose, onConfirm }: { o
 
 function RuntimeBadge({ network }: { network: NetworkSummary }) {
   const { runningCount, queuedCount, scheduledCount, running, queued } = network.runtime
-  const stopped = network.latestSnapshot?.status === 'HARVESTING_STOPPED'
+  const stopped = ['HARVESTING_STOPPED', 'VALIDATION_STOPPED'].includes(network.latestSnapshot?.status || '')
   if (runningCount === 0 && queuedCount === 0 && scheduledCount === 0) {
     return stopped
       ? <Tooltip title={uiText('stoppedHelp')}><Chip size="small" color="warning" icon={<WarningAmberIcon />} label={uiText('stopped')} /></Tooltip>
@@ -209,6 +209,9 @@ function SnapshotCell({ snapshot, lastValidSnapshotId, lastValidSnapshotAt, onOp
 
 function shortSnapshotStatus(status: string): { label: string; color: 'default' | 'success' | 'warning' | 'error' | 'info' } {
   switch (status) {
+    case 'VALIDATING': return { label: uiText('VALIDATING'), color: 'info' }
+    case 'VALIDATION_FINISHED_ERROR': return { label: uiText('VALIDATION_FINISHED_ERROR'), color: 'error' }
+    case 'VALIDATION_STOPPED': return { label: uiText('VALIDATION_STOPPED'), color: 'warning' }
     case 'VALID': return { label: uiText('validated'), color: 'success' }
     case 'HARVESTING': return { label: uiText('harvesting'), color: 'info' }
     case 'RETRYING': return { label: uiText('retrying'), color: 'warning' }
