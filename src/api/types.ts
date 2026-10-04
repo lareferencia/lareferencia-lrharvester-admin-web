@@ -1,5 +1,6 @@
 export type PageResponse<T> = { items: T[]; page: number; size: number; totalElements: number; totalPages: number }
 
+
 export type Snapshot = {
   id: number; networkId: number; status: string; indexStatus: string
   startTime: string | null; endTime: string | null; size: number | null
@@ -27,13 +28,13 @@ export type RuntimeState = { runningCount: number; queuedCount: number; schedule
 export type NetworkSummary = {
   id: number; published: boolean; acronym: string; name: string; institutionName: string
   institutionAcronym: string | null; latestSnapshot: Snapshot | null; lastValidSnapshotId: number | null
-  lastValidSnapshotAt: string | null; runtime: RuntimeState
+  lastValidSnapshotAt: string | null; runtime: RuntimeState; tags?: string[]
 }
 
 export type Network = {
   id: number; published: boolean; acronym: string; name: string; institutionName: string
   institutionAcronym: string | null; originUrl: string; metadataPrefix: string | null
-  metadataStoreSchema: string | null; sets: string[]; attributes: Record<string, unknown>
+  tags?: string[]; metadataStoreSchema: string | null; sets: string[]; attributes: Record<string, unknown>
   properties: Record<string, boolean>; scheduleCronExpression: string | null
   prevalidatorId: number | null; validatorId: number | null; transformerId: number | null; secondaryTransformerId: number | null
 }

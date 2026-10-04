@@ -19,6 +19,8 @@ export function NetworkTransferDialog({ open, client, onClose, onImported }: { o
     mutationFn: () => client.importNetworksXlsx(file!, mode),
     onSuccess: result => {
       void cache.invalidateQueries({ queryKey: ['network-summaries'] })
+      void cache.invalidateQueries({ queryKey: ['network-tags'] })
+      void cache.invalidateQueries({ queryKey: ['network'] })
       onImported(t('networks.importSuccess', { created: result.created, updated: result.updated }))
       close()
     },

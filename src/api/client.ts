@@ -74,6 +74,7 @@ export class ApiClient {
   issueToken(id: number, expiresAt: string) { return this.request<IssuedApiToken>(`/service-accounts/${id}/tokens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresAt }) }) }
   revokeToken(id: number, tokenId: number) { return this.request<void>(`/service-accounts/${id}/tokens/${tokenId}`, { method: 'DELETE' }) }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
+  networkTags() { return this.request<string[]>('/network-tags') }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }
   createNetwork(request: NetworkRequest) { return this.request<Network>('/networks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }) }
   exportNetworksXlsx() { return this.requestBlob('/network-transfers/export.xlsx') }
