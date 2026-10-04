@@ -73,6 +73,7 @@ export class ApiClient {
   tokens(id: number) { return this.request<ApiToken[]>(`/service-accounts/${id}/tokens`) }
   issueToken(id: number, expiresAt: string) { return this.request<IssuedApiToken>(`/service-accounts/${id}/tokens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresAt }) }) }
   revokeToken(id: number, tokenId: number) { return this.request<void>(`/service-accounts/${id}/tokens/${tokenId}`, { method: 'DELETE' }) }
+  networkIndexers() { return this.request<string[]>(`/network-indexers`) }
   networkSummaries(params: URLSearchParams) { return this.request<PageResponse<NetworkSummary>>(`/network-summaries?${params}`) }
   networkTags() { return this.request<string[]>('/network-tags') }
   network(id: number) { return this.request<Network>(`/networks/${id}`) }

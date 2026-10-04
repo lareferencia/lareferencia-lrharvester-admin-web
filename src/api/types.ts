@@ -1,10 +1,12 @@
 export type PageResponse<T> = { items: T[]; page: number; size: number; totalElements: number; totalPages: number }
 
+export type IndexingResult = { status: 'INDEXED' | 'FAILED'; actionName: string | null; finishedAt: string; error: string | null }
 
 export type Snapshot = {
   id: number; networkId: number; status: string; indexStatus: string
   startTime: string | null; endTime: string | null; size: number | null
   validSize: number | null; transformedSize: number | null; deleted: boolean
+  indexingResults?: Record<string, IndexingResult>
 }
 export type MetadataCleanupPreview = { networkId: number; protectedSnapshotIds: number[]; oaiReferences: number; validationReferences: number; metadataEntriesScanned: number; orphanCandidates: number; falsePositiveProbability: number }
 
