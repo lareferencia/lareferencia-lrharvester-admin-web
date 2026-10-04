@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { ApiClient } from '../../api/client'
@@ -34,7 +35,8 @@ function ConfigurationForm({ client, response }: { client: ApiClient; response: 
   useEffect(() => {
     if (!editing) setValues(Object.fromEntries(fields.map(field => [field.key, String(response.configuration[field.key])])) as Record<keyof TaskManagerSettings, string>)
   }, [response.configuration, editing])
-  const valid = fields.every(field => /^\d+$/.test(values[field.key]) && Number.isSafeInteger(Number(values[field.key])) && Number(values[field.key]) >= field.min && Number(values[field.key]) <= field.max)
+  const fieldValid = (field: typeof fields[number]) => /^\d+$/.test(values[field.key]) && Number.isSafeInteger(Number(values[field.key])) && Number(values[field.key]) >= field.min && Number(values[field.key]) <= field.max
+  const valid = fields.every(fieldValid)
   const dirty = fields.some(field => values[field.key] !== String(response.configuration[field.key]))
   const save = useMutation({
     mutationFn: (value: TaskManagerSettings) => client.updateRuntimeConfiguration(value),
@@ -46,18 +48,29 @@ function ConfigurationForm({ client, response }: { client: ApiClient; response: 
       void queryClient.invalidateQueries({ queryKey: queryKeys.runtime })
     },
   })
+  const renderField = (field: typeof fields[number]) => <Stack key={field.key} spacing={1} sx={{ flex: '1 1 0', minWidth: 0 }}>
+    <TextField type="number" size="small" fullWidth
+      label={t(`runtime.configuration.fields.${field.key}`)} value={values[field.key]} disabled={save.isPending}
+      error={!fieldValid(field)}
+      helperText={!fieldValid(field) ? t('runtime.configuration.integerRange', { min: field.min, max: field.max }) : values[field.key] !== String(response.configuration[field.key]) ? t('runtime.configuration.current', { value: response.configuration[field.key] }) : undefined}
+      slotProps={{ htmlInput: { min: field.min, max: field.max, step: 1 } }}
+      onChange={event => { setEditing(true); setSaved(false); save.reset(); setValues(previous => ({ ...previous, [field.key]: event.target.value })) }} />
+    <Typography variant="body2" color="text.secondary">{t(`runtime.configuration.fieldHelp.${field.key}`)}</Typography>
+  </Stack>
   return <Stack component="form" spacing={2} onSubmit={event => {
     event.preventDefault()
     if (valid && dirty && !save.isPending) save.mutate(Object.fromEntries(fields.map(field => [field.key, Number(values[field.key])])) as TaskManagerSettings)
   }}>
     <Typography variant="body2" color="text.secondary">{t('runtime.configuration.help')}</Typography>
     <Typography variant="body2" color="text.secondary">{t(response.persisted ? 'runtime.configuration.persisted' : 'runtime.configuration.properties')}</Typography>
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-      {fields.map(field => <TextField key={field.key} type="number" size="small" sx={{ minWidth: 210, flex: '1 1 210px' }}
-        label={t(`runtime.configuration.fields.${field.key}`)} value={values[field.key]} disabled={save.isPending}
-        slotProps={{ htmlInput: { min: field.min, max: field.max, step: 1 } }}
-        onChange={event => { setEditing(true); setSaved(false); save.reset(); setValues(previous => ({ ...previous, [field.key]: event.target.value })) }} />)}
-    </Stack>
+    <Box><Typography variant="subtitle1" fontWeight={600}>{t('runtime.configuration.executionTitle')}</Typography><Typography variant="body2" color="text.secondary">{t('runtime.configuration.executionHelp')}</Typography></Box>
+    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>{fields.slice(0, 2).map(renderField)}</Stack>
+    {valid && <Alert severity="info">{t('runtime.configuration.preview', { active: Number(values.concurrentTasks), queued: Number(values.maxQueuedTasks) })}</Alert>}
+    {valid && dirty && (Number(values.concurrentTasks) < response.configuration.concurrentTasks || Number(values.maxQueuedTasks) < response.configuration.maxQueuedTasks) && <Alert severity="warning">{t('runtime.configuration.reduced')}</Alert>}
+    <Accordion disableGutters elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, '&:before': { display: 'none' } }} slotProps={{ transition: { unmountOnExit: true } }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography fontWeight={600}>{t('runtime.configuration.advancedTitle')}</Typography></AccordionSummary>
+      <AccordionDetails><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('runtime.configuration.advancedHelp')}</Typography><Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>{fields.slice(2).map(renderField)}</Stack></AccordionDetails>
+    </Accordion>
     {!valid && <Alert severity="warning">{t('runtime.configuration.invalid')}</Alert>}
     {save.isError && <Alert severity="error">{t('runtime.configuration.saveError')} {save.error.message}</Alert>}
     {saved && <Alert severity="success">{t('runtime.configuration.saved')}</Alert>}
