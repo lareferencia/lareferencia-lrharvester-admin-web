@@ -30,3 +30,14 @@ describe('ApiClient login CSRF cookie check', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('Authentication errors', () => {
+  it('does not invalidate the session for a forbidden request', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 403 })))
+    const client = new ApiClient('/api/v5')
+    const unauthorized = vi.fn()
+    client.setUnauthorizedHandler(unauthorized)
+    await expect(client.runtime()).rejects.toMatchObject({ status: 403 })
+    expect(unauthorized).not.toHaveBeenCalled()
+  })
+})

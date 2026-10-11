@@ -14,9 +14,12 @@ export class ApiClient {
   setUnauthorizedHandler(handler: (() => void) | null) { this.unauthorizedHandler = handler }
 
   private async apiError(response: Response) {
-    const error = await asApiError(response)
-    if (error.status === 401) this.unauthorizedHandler?.()
-    return error
+    if (response.status === 401) {
+      this.csrfToken = null
+      this.bearerToken = null
+      this.unauthorizedHandler?.()
+    }
+    return asApiError(response)
   }
 
   private async csrf(): Promise<string> {
@@ -57,7 +60,7 @@ export class ApiClient {
     if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`)
     else headers.set('X-XSRF-TOKEN', await this.csrf())
     const response = await fetch(`${this.baseUrl}${path}`, { headers, credentials: 'include' })
-    if (!response.ok) throw await asApiError(response)
+    if (!response.ok) throw await this.apiError(response)
     return response.blob()
   }
 
