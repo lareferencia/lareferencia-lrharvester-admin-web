@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import type { ApiClient } from '../api/client'
 import type { CurrentUser } from '../api/types'
 
@@ -7,6 +7,11 @@ const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ client, children }: PropsWithChildren<{ client: ApiClient }>) {
   const [user, setUser] = useState<CurrentUser | null>(null)
+  const handleUnauthorized = useCallback(() => setUser(null), [])
+  useEffect(() => {
+    client.setUnauthorizedHandler(handleUnauthorized)
+    return () => client.setUnauthorizedHandler(null)
+  }, [client, handleUnauthorized])
   useEffect(() => {
     let active = true
     void client.me().then(current => { if (active) setUser(current) }).catch(() => {

@@ -9,7 +9,7 @@ export function RequireRole({ children, role }: PropsWithChildren<{ role?: 'ADMI
   useTranslation()
   const { user, logout } = useAuth()
   const location = useLocation()
-  if (!user) return <Navigate replace to="/login" state={{ from: location.pathname }} />
+  if (!user) return <Navigate replace to="/login" state={{ from: `${location.pathname}${location.search}${location.hash}` }} />
   if (!role && !user.roles.some(value => value === 'ADMIN' || value === 'READER'))
     return <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}><Stack spacing={2}>
       <Alert severity="warning">{uiText('adminAccessHelp')}</Alert>

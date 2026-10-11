@@ -6,15 +6,23 @@ export class SecureCookieHttpError extends Error {}
 export class ApiClient {
   private csrfToken: string | null = null
   private bearerToken: string | null = null
+  private unauthorizedHandler: (() => void) | null = null
 
   constructor(private readonly baseUrl: string) {}
 
   setBearerToken(token: string | null) { this.bearerToken = token }
+  setUnauthorizedHandler(handler: (() => void) | null) { this.unauthorizedHandler = handler }
+
+  private async apiError(response: Response) {
+    const error = await asApiError(response)
+    if (error.status === 401) this.unauthorizedHandler?.()
+    return error
+  }
 
   private async csrf(): Promise<string> {
     if (this.csrfToken) return this.csrfToken
     const response = await fetch(`${this.baseUrl}/auth/csrf`, { credentials: 'include', cache: 'no-store' })
-    if (!response.ok) throw await asApiError(response)
+    if (!response.ok) throw await this.apiError(response)
     const result = await response.json() as { token: string }
     this.csrfToken = result.token
     return this.csrfToken
@@ -31,7 +39,7 @@ export class ApiClient {
       if (!headers.has('X-XSRF-TOKEN')) headers.set('X-XSRF-TOKEN', token)
     }
     const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers, credentials: 'include' })
-    if (!response.ok) throw await asApiError(response)
+    if (!response.ok) throw await this.apiError(response)
     return response.status === 204 ? undefined as T : response.json() as Promise<T>
   }
 
@@ -40,7 +48,7 @@ export class ApiClient {
     if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`)
     else headers.set('X-XSRF-TOKEN', await this.csrf())
     const response = await fetch(`${this.baseUrl}${path}`, { headers, credentials: 'include' })
-    if (!response.ok) throw await asApiError(response)
+    if (!response.ok) throw await this.apiError(response)
     return response.text()
   }
 
