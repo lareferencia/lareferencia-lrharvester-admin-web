@@ -123,3 +123,20 @@ export type DarkPreviewItem = { oaiId: string; ark: string | null; localState: s
 export type DarkPreviewResponse = { items: DarkPreviewItem[] }
 export type DarkManualCommand = { commandId: string; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED'; action: 'STAGE' | 'RECONCILE'; total: number; phase: string; processed: number; succeeded: number; skipped: number; failed: number; statusUrl: string; acceptedAt: string }
 export type NetworkActionConfiguration = { actionKey: string; order?: number | null; globalState: ApplicationActionState; enabled: boolean; scheduleEnabled: boolean; configuration: Record<string, unknown>; effectiveConfiguration: Record<string, unknown>; schema: Record<string, unknown>; uiSchema: Record<string, unknown>; problems: string[]; updatedAt: string; updatedBy: string | null }
+
+export interface DarkAuthentication {
+  mode: 'legacy' | 'dark2'
+  registrationStatus: 'not_configured' | 'pending_registration' | 'enabled' | 'unavailable'
+  credentialId: string | null
+  keyId: string | null
+  publicKey: string | null
+  publicKeyBase64: string | null
+  authorityId: string | null
+  baseUrl: string | null
+  storageRoot: string
+  generatedAt: string | null
+  generatedBy: string | null
+  confirmedAt: string | null
+  confirmedBy: string | null
+  error: string | null
+}
