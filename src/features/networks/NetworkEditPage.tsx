@@ -19,7 +19,7 @@ import { queryKeys } from '../../api/query-keys'
 import { useTranslation } from 'react-i18next'
 
 const createNetworkFormSchema = () => z.object({
-  acronym: z.string().min(2, uiText('minLength')).max(10, uiText('maxAcronym')).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, uiText('acronymPattern')),
+  acronym: z.string().min(2, uiText('minLength')).max(20, uiText('maxAcronym')).regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/, uiText('acronymPattern')),
   name: z.string().min(2, uiText('minLength')),
   institutionName: z.string().min(2, uiText('minLength')),
   institutionAcronym: z.string(),
@@ -153,7 +153,7 @@ function GeneralFields({ form, capabilities }: { form: UseFormReturn<NetworkForm
   const { t } = useTranslation()
   const cronValue = form.watch('scheduleCronExpression')
   return <Stack spacing={2}><Typography variant="h6">{t('networks.principalData')}</Typography>
-    <TextField label={t('networks.acronym')} helperText={t('networks.acronymHelp')} {...register('acronym')} error={Boolean(errors.acronym)} InputProps={{ readOnly: true }} />
+    <TextField label={t('networks.acronym')} helperText={errors.acronym?.message || t('networks.acronymHelp')} {...register('acronym')} error={Boolean(errors.acronym)} InputProps={{ readOnly: true }} />
     <TextField label={t('networks.repository')} {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message} required />
     <TextField label={t('networks.institution')} {...register('institutionName')} error={Boolean(errors.institutionName)} helperText={errors.institutionName?.message} required />
     <TextField label={uiText('institutionAcronym')} {...register('institutionAcronym')} />
