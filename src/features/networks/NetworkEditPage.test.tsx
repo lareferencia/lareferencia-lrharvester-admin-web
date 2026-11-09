@@ -12,7 +12,7 @@ vi.mock('react-i18next', async importOriginal => ({ ...await importOriginal<type
 beforeEach(async () => { await i18n.changeLanguage('es') })
 afterEach(cleanup)
 
-async function openEditor(sets: string[] = [], formats: Partial<Pick<Network, 'metadataPrefix' | 'metadataStoreSchema'>> = {}) {
+async function openEditor(sets: string[] = [], formats: Partial<Pick<Network, 'metadataPrefix' | 'metadataStoreSchema' | 'acronym'>> = {}) {
   let saved: Network = {
     id: 1, acronym: 'PA', name: 'Panamá', institutionName: 'SENACYT', institutionAcronym: null,
     published: false, originUrl: 'https://oai.lareferencia.info/request', metadataPrefix: 'oai_dc',
@@ -140,5 +140,21 @@ describe('Network tags', () => {
     clickButton('networks.saveChanges')
     await waitFor(() => expect(updateNetwork).toHaveBeenCalledWith(1, expect.objectContaining({ tags: ['pais:ar'] })))
     expect(await screen.findByText('pais:ar', { selector: '.MuiChip-label' })).toBeTruthy()
+  })
+})
+
+
+describe('NetworkEditPage acronym validation (issue #104)', () => {
+  it.each(['SBFGNOSIA-1', 'ABMABCABPOL-1', 'ESCOLADEMINAS-1', 'FUNDACENTRO-1', 'SOURCE_1-OK', 'A'.repeat(20)])('allows updating the URL for %s', async acronym => {
+    const { updateNetwork } = await openEditor([], { acronym })
+    fireEvent.change(screen.getByLabelText('networks.url', { exact: false }), { target: { value: 'https://example.org/new-oai' } })
+    clickButton('networks.saveChanges')
+    await waitFor(() => expect(updateNetwork).toHaveBeenCalledWith(1, expect.objectContaining({ acronym, originUrl: 'https://example.org/new-oai' })))
+  })
+  it.each(['SOURCE 1', ' SOURCE', 'SOURCE ', 'SOURCE.1', 'SOURCE@1', 'SOURCE/1', 'SOURCE+1', 'FUENTEÑ', 'SOURCE\t1', '_SOURCE', '-SOURCE', 'A', 'A'.repeat(21)])('rejects invalid acronym %s', async acronym => {
+    const { updateNetwork } = await openEditor([], { acronym })
+    clickButton('networks.saveChanges')
+    await waitFor(() => expect(screen.getByLabelText('networks.acronym')).toHaveAttribute('aria-invalid', 'true'))
+    expect(updateNetwork).not.toHaveBeenCalled()
   })
 })
