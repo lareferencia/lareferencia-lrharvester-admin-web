@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 harvester_dir="${HARVESTER_APP_DIR:-${script_dir}/../lareferencia-lrharvester-app}"
-static_dir="${harvester_dir}/static"
+static_dir="${harvester_dir}/admin-static"
 
 if [[ ! -f "${harvester_dir}/pom.xml" ]]; then
   echo "No se encontró la aplicación harvester en: ${harvester_dir}" >&2
