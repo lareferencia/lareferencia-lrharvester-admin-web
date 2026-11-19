@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import HighlightOffIcon from '@mui/icons-material/HighlightOff'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Alert, Button, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Button, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Pagination, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import type { ApiClient } from '../../api/client'
 import type { IndexingResult, Snapshot } from '../../api/types'
 import { queryKeys } from '../../api/query-keys'
@@ -88,7 +88,8 @@ export function SnapshotIndexingIndicator({ snapshot }: { snapshot: Snapshot | n
 export function NetworkIndexingResults({ client, networkId }: { client: ApiClient; networkId: number }) {
   const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const snapshots = useQuery({ queryKey: queryKeys.networkSnapshots(networkId), queryFn: () => client.networkSnapshots(networkId), refetchInterval: 10_000 })
+  const [page, setPage] = useState(0)
+  const snapshots = useQuery({ queryKey: queryKeys.networkSnapshots(networkId, page), queryFn: () => client.networkSnapshots(networkId, page), refetchInterval: 10_000 })
   const selected = snapshots.data?.items.find(snapshot => snapshot.id === selectedId) ?? snapshots.data?.items[0]
   return <Paper variant="outlined" sx={{ p: 2 }}><Stack spacing={1.5}>
     <Typography variant="h6">{t('indexing.title')}</Typography>
@@ -97,6 +98,7 @@ export function NetworkIndexingResults({ client, networkId }: { client: ApiClien
         {snapshots.data?.items.map(snapshot => <MenuItem key={snapshot.id} value={snapshot.id}>#{snapshot.id}</MenuItem>)}
       </TextField>
       <SnapshotIndexingIndicator key={selected.id} snapshot={selected} />
+      {snapshots.data && snapshots.data.totalPages > 1 && <Pagination page={page + 1} count={snapshots.data.totalPages} onChange={(_, value) => { setPage(value - 1); setSelectedId(null) }} />}
     </Stack> : <Typography color="text.secondary">{t('indexing.noSnapshots')}</Typography>}
   </Stack></Paper>
 }

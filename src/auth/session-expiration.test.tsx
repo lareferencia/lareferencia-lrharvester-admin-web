@@ -25,6 +25,20 @@ function SessionRoutes() {
 }
 
 describe('Session expiration', () => {
+  it('keeps a protected deep link while restoring the existing session', async () => {
+    let finish!: (response: Response) => void
+    vi.stubGlobal('fetch', () => new Promise<Response>(resolve => { finish = resolve }))
+    render(<AuthProvider client={new ApiClient('/api/v5')}><MemoryRouter initialEntries={['/networks?tag=test']}>
+      <Routes>
+        <Route path="/networks" element={<RequireRole><div>Protected page</div></RequireRole>} />
+        <Route path="/login" element={<LoginDestination />} />
+      </Routes>
+    </MemoryRouter></AuthProvider>)
+    expect(screen.queryByText(/Login return/)).toBeNull()
+    await act(async () => finish(new Response(JSON.stringify({ username: 'admin', roles: ['ADMIN'] }))))
+    expect(await screen.findByText('Protected page')).toBeInTheDocument()
+  })
+
   it.each(['json', 'text', 'download', 'malformed-json'] as const)('redirects after a background %s request returns 401', async kind => {
     const fetch = vi.fn().mockImplementation(async (url: string) => {
       if (url.endsWith('/me')) return new Response(JSON.stringify({ username: 'admin', roles: ['ADMIN'] }))

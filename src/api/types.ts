@@ -14,7 +14,7 @@ export type DiagnosticFilterField = 'IDENTIFIER' | 'VALID' | 'TRANSFORMED' | 'RU
 export type DiagnosticFilter = { field: DiagnosticFilterField; operator?: 'EQ' | 'CONTAINS'; value: string | boolean | number }
 export type DiagnosticQuery = { filters: DiagnosticFilter[]; page?: number; size?: number }
 export type DiagnosticFacet = { field: string; value: string; count: number }
-export type DiagnosticRule = { ruleId: number; name: string; description: string | null; quantifier: string | null; mandatory: boolean | null; validCount: number | null; invalidCount: number | null }
+export type DiagnosticRule = { ruleId: number; name: string; description: string | null; quantifier: string | null; mandatory: boolean | null; validCount: number | null; invalidCount: number | null; occurrenceCaptureEnabled?: boolean | null }
 export type DiagnosticSummary = { size: number; validSize: number; transformedSize: number; rules: DiagnosticRule[]; facets: DiagnosticFacet[] }
 export type DiagnosticRecord = {
   id: string; identifier: string; snapshotId: number; origin: string | null; setSpec: string | null; metadataPrefix: string | null
