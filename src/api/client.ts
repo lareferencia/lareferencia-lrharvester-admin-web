@@ -112,7 +112,9 @@ export class ApiClient {
     const body = new FormData(); body.append('file', file)
     return this.request<NetworkImportResult>(`/network-transfers/import?mode=${mode}`, { method: 'POST', body })
   }
-  networkSnapshots(id: number) { return this.request<PageResponse<Snapshot>>(`/networks/${id}/snapshots?page=0&size=100`) }
+  networkSnapshots(id: number, page = 0) { return this.request<PageResponse<Snapshot>>(`/networks/${id}/snapshots?page=${page}&size=100`) }
+  latestValidSnapshot(networkId: number) { return this.request<Snapshot>(`/networks/${networkId}/snapshots/latest?status=valid`) }
+  snapshot(id: number) { return this.request<Snapshot>(`/snapshots/${id}`) }
   updateNetwork(id: number, request: NetworkRequest) {
     return this.request<Network>(`/networks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) })
   }

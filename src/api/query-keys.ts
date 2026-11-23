@@ -13,7 +13,7 @@ export const queryKeys = {
   applicationActions: ['application-actions'] as const,
   workerConfigurations: ['worker-configurations'] as const,
   networkActions: (id: number) => ['networks', id, 'actions'] as const,
-  networkSnapshots: (id: number) => ['networks', id, 'snapshots'] as const,
+  networkSnapshots: (id: number, page = 0) => ['networks', id, 'snapshots', page] as const,
   diagnosticSummary: (snapshotId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'summary', filters] as const,
   diagnosticRecords: (snapshotId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'records', filters] as const,
   diagnosticOccurrences: (snapshotId: number, ruleId: number, filters: string) => ['snapshots', snapshotId, 'diagnostics', 'occurrences', ruleId, filters] as const,

@@ -7,15 +7,14 @@ import type { ApiError } from '../../api/problem-detail'
 import type { CapabilityAction, CommandRequest, NetworkSummary } from '../../api/types'
 
 type Props = {
-  open: boolean
   client: ApiClient
   networks: NetworkSummary[]
   actions: CapabilityAction[]
   onClose: () => void
-  onCompleted: (message: string) => void
+  onCompleted: (message?: string) => void
 }
 
-export function NetworkBatchCommandDialog({ open, client, networks, actions, onClose, onCompleted }: Props) {
+export function NetworkBatchCommandDialog({ client, networks, actions, onClose, onCompleted }: Props) {
   const { t } = useTranslation()
   const cache = useQueryClient()
   const orderedActions = useMemo(() => [...actions].sort((left, right) => (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER)), [actions])
@@ -29,15 +28,19 @@ export function NetworkBatchCommandDialog({ open, client, networks, actions, onC
       const rejected = receipt.children.length - accepted
       void cache.invalidateQueries({ queryKey: ['network-summaries'] })
       void cache.invalidateQueries({ queryKey: ['runtime'] })
-      onCompleted(t('networks.batchCompleted', { accepted, rejected }))
+      if (rejected === 0) onCompleted(t('networks.batchCompleted', { accepted, rejected }))
     },
   })
 
-  const close = () => { if (!execute.isPending) { execute.reset(); onClose() } }
+  const close = () => {
+    if (execute.isPending) return
+    if (execute.isSuccess) onCompleted()
+    else onClose()
+  }
   const submit = () => { if (actionName) execute.mutate({ type: 'RUN_ACTION', actionName, incremental: selectedAction?.incremental ? incremental : false }) }
   const rejected = execute.data?.children.filter(child => child.result === 'REJECTED') || []
 
-  return <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
+  return <Dialog open onClose={close} fullWidth maxWidth="sm">
     <DialogTitle>{t('networks.batchTitle', { count: networks.length })}</DialogTitle>
     <DialogContent dividers>
       {execute.isSuccess ? <Stack spacing={2}>

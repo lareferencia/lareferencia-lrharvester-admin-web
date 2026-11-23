@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { LinearProgress } from '@mui/material'
 import type { ApiClient } from '../api/client'
 import type { CurrentUser } from '../api/types'
 
@@ -6,6 +7,7 @@ type AuthState = { user: CurrentUser | null; login: (username: string, password:
 const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ client, children }: PropsWithChildren<{ client: ApiClient }>) {
+  const [checkingSession, setCheckingSession] = useState(true)
   const [user, setUser] = useState<CurrentUser | null>(null)
   const handleUnauthorized = useCallback(() => setUser(null), [])
   useEffect(() => {
@@ -16,7 +18,7 @@ export function AuthProvider({ client, children }: PropsWithChildren<{ client: A
     let active = true
     void client.me().then(current => { if (active) setUser(current) }).catch(() => {
       if (active) setUser(null)
-    })
+    }).finally(() => { if (active) setCheckingSession(false) })
     return () => { active = false }
   }, [client])
   const value = useMemo<AuthState>(() => ({
@@ -24,6 +26,7 @@ export function AuthProvider({ client, children }: PropsWithChildren<{ client: A
     login: async (username, password) => { setUser(await client.login(username, password)) },
     logout: async () => { try { await client.logout() } finally { setUser(null) } },
   }), [client, user])
+  if (checkingSession) return <LinearProgress />
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

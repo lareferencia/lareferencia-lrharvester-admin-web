@@ -25,6 +25,7 @@ describe('Network tag filters', () => {
     const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(<QueryClientProvider client={cache}><MemoryRouter initialEntries={['/networks?page=2&tag=pais:ar&tagMode=any&q=repo']}><NetworkListPage client={client} /></MemoryRouter></QueryClientProvider>)
     await screen.findByText('Repository')
+    expect(client.capabilities).not.toHaveBeenCalled()
     const restored = networkSummaries.mock.calls[0] as unknown as [URLSearchParams]
     expect(restored[0].getAll('tag')).toEqual(['pais:ar'])
     expect(restored[0].get('tagMode')).toBe('any')
